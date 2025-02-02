@@ -1,14 +1,19 @@
-import type React from "react"
+import React from "react"
 
 interface ErrorMessageProps {
+  id?: string
   message: string
 }
 
-export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
-  return (
-    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-      <span className="block sm:inline">{message}</span>
-    </div>
-  )
-}
+export const ErrorMessage: React.FC<ErrorMessageProps> = React.forwardRef<HTMLDivElement, ErrorMessageProps>(
+  ({ id, message }, ref) => {
+    return (
+      <div ref={ref} id={id} className="text-red-500 text-sm mt-1" role="alert">
+        {message}
+      </div>
+    )
+  },
+)
+
+ErrorMessage.displayName = "ErrorMessage"
 

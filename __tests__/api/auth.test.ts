@@ -2,7 +2,6 @@ import { describe, test, expect, beforeAll, afterAll, jest } from "@jest/globals
 import mongoose from "mongoose"
 import { createMocks } from "node-mocks-http"
 import authHandler from "../../src/pages/api/auth/[...auth]"
-import { connectToDatabase } from "../../src/utils/database"
 import { User } from "../../src/models/User"
 
 jest.mock("../../src/utils/database")

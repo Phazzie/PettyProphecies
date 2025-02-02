@@ -61,6 +61,11 @@
     "@types/express": "latest",
     "@types/node": "latest",
     "express": "latest",
+    "@testing-library/dom": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@auth/core": "latest",
+    "nodemailer": "latest",
     "@jest/globals": "latest",
     "mongoose": "latest",
     "bcryptjs": "latest",
@@ -70,7 +75,10 @@
     "@sentry/react": "latest",
     "@sentry/tracing": "latest",
     "react-toastify": "latest",
-    "express-rate-limit": "latest"
+    "express-rate-limit": "latest",
+    "@testing-library/react": "latest",
+    "jest-fetch-mock": "latest",
+    "next-auth": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

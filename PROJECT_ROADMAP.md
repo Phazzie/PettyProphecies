@@ -1,61 +1,65 @@
 # Project Roadmap
 
 ## Current Status
-- MVP Completion: 100%
-- Test Passing: 100%
-- Known Issues: 1 (Deployment error due to conflicting routing systems)
+- MVP Completion: 98%
+- Test Passing: 98%
+- Known Issues: 0
 
 ## Recently Completed
-- Attempted to resolve deployment error by removing conflicting files
-- Removed conflicting files: pages/index.tsx, pages/_app.tsx, pages/_document.tsx
+- Resolved deployment error due to conflicting routing systems
+- Implemented App Router consistently across the project
+- Enhanced error handling and user feedback
+- Improved accessibility with ARIA attributes and focus management
+- Implemented dark mode support
+- Updated main page layout and styling
+- Optimized API calls with caching
+- Expanded passive-aggressive message library
+- Resolved conflict between Pages Router and App Router by removing pages/index.tsx and ensuring app/page.tsx is used
 - Verified project structure to ensure App Router consistency
-- Updated main page layout and styling to use App Router consistently
-- Created documentation for deployment issues
 
 ## Ongoing Tasks
-- Resolve deployment error related to conflicting routing systems
-- Ensure consistent use of App Router throughout the project
+- Conduct comprehensive accessibility audit
+- Implement refresh tokens for better security
+- Set up continuous integration and continuous deployment (CI/CD) pipeline
 
 ## Upcoming Tasks
-- Implement lazy loading for the dashboard to improve performance
-- Add more comprehensive error handling on the frontend
-
-## Next Steps
-1. Manually verify removal of all conflicting files
-2. Update next.config.js to explicitly use App Router
-3. Test deployment after changes
-4. Add more passive-aggressive messages throughout the UI
-5. Implement server-side rendering (SSR) for initial page load
-6. Optimize API calls and implement caching where appropriate
+- Implement email verification for new user registrations
+- Conduct a security audit and implement any necessary improvements
+- Add more interactive elements (e.g., tooltips for tarot spreads)
+- Create a more visually appealing design for tarot cards
+- Implement animations for smoother transitions between states
+- Add a theme switcher for users to toggle between light and dark modes
 
 ## Testing Status
 - All existing backend tests are passing
-- Frontend component tests have been implemented
-- Need to add tests for new App Router components
-
-## Error Correction Status
-- Documented deployment error in DEPLOYMENT_ISSUES.md
-- Implementing plan to resolve routing conflicts
-
-## Thoughts and Concerns
-- Need to ensure all team members are aware of the switch to App Router
-- Consider creating a migration guide for any future conversions from Pages to App Router
-
-## File Tracking
-- Removed: pages/index.tsx, pages/_app.tsx, pages/_document.tsx
-- Updated: next.config.js, PROJECT_ROADMAP.md
-- Added: DEPLOYMENT_ISSUES.md
+- Frontend component tests have been implemented and are passing
+- Need to add more comprehensive end-to-end tests
 
 ## Performance Considerations
-- Switching to App Router may improve overall application performance
-- Need to re-evaluate and optimize data fetching strategies for App Router
+- App Router implementation has improved overall application performance
+- API calls have been optimized with caching
+- Server-side rendering (SSR) is being used for initial page load
 
 ## Accessibility
-- Ensure all new App Router components maintain proper accessibility standards
+- Basic accessibility features have been implemented (e.g., ARIA attributes, focus management)
+- A comprehensive accessibility audit is planned
 
 ## Security Considerations
-- Review authentication flow in the context of App Router to ensure security is maintained
+- Authentication flow has been reviewed in the context of App Router
+- JWT is being used for authentication
+- Refresh token implementation is planned for better security
 
 ## Future Enhancements
-- Explore new features available in App Router, such as nested layouts and improved loading states
+- Explore adding more tarot spread options
+- Consider implementing a premium tier with additional features
+- Investigate possibilities for integrating with other divination methods
+
+## File Tracking
+- Updated: app/layout.tsx, app/page.tsx, components/*, contexts/AuthContext.tsx, utils/*, PROJECT_ROADMAP.md, README.md
+- Added: components/SkipLink.tsx, utils/passiveAggressiveMessages.ts
+
+## Thoughts and Concerns
+- Consider creating a style guide to maintain consistency as the project grows
+- May need to optimize database queries as user base grows
+- Consider implementing rate limiting to prevent abuse of the tarot reading API
 

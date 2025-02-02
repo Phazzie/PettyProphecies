@@ -1,26 +1,34 @@
-# Current Task: Enhance frontend error handling and user feedback
+# Current Task: Finalize Documentation and Code Comments
 
 ## Checklist
 
-### Global Error Handling
-- [x] Implement a global error boundary component
-- [x] Create a custom error page for uncaught errors
+### Code Comments
+- [x] Add comments to TarotReading component
+- [x] Add comments to Login component
+- [x] Add comments to Register component
+- [x] Add comments to UserDashboard component
+- [x] Add comments to ErrorBoundary component
+- [x] Update api.ts utility file with detailed comments
+- [x] Add comments to passiveAggressiveMessages.ts utility file
+- [x] Add comments to validation.ts utility file
+- [x] Add comments to database.ts utility file
 
-### API Error Handling
-- [x] Create a utility function for handling API errors
-- [x] Implement consistent error message display across components
-- [x] Handle network errors and timeouts
+### Documentation
+- [ ] Create separate .md files for complex components, detailing their props, state, and usage
+- [ ] Update the API documentation in a separate API.md file
+- [ ] Review and update the README.md file
+- [ ] Final review of PROJECT_ROADMAP.md
 
-### User Feedback
-- [x] Implement toast notifications for success and error messages
-- [x] Add loading indicators for asynchronous operations
-- [x] Improve form submission feedback
+### Testing
+- [ ] Ensure all existing tests pass with the new changes
+- [ ] Add or update tests for components with new comments
 
 ### Accessibility
-- [x] Ensure error messages are announced to screen readers
-- [x] Implement focus management for error messages and notifications
+- [ ] Review components for any missed accessibility improvements
+- [ ] Ensure all new comments include relevant accessibility information
 
-### Error Logging
-- [x] Implement client-side error logging
-- [x] Set up error reporting to a monitoring service (e.g., Sentry)
+### Final Steps
+- [ ] Conduct a final code review
+- [ ] Update the project version number
+- [ ] Prepare for deployment
 

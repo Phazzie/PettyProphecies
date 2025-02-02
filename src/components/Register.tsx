@@ -6,8 +6,14 @@ import { toast } from "react-toastify"
 import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
+import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
 
+/**
+ * Register component for user registration
+ * @returns {JSX.Element} The Register form
+ */
 export const Register: React.FC = () => {
+  // Form validation hook
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { username: "", email: "", password: "", confirmPassword: "" },
     {
@@ -17,8 +23,14 @@ export const Register: React.FC = () => {
       confirmPassword: (value) => value === values.password,
     },
   )
+
+  // API request hook
   const { request, loading } = useApiRequest<{ message: string }>()
 
+  /**
+   * Handles form submission
+   * @param {React.FormEvent} e - The form event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
@@ -32,7 +44,7 @@ export const Register: React.FC = () => {
             password: values.password,
           },
           onSuccess: () => {
-            toast.success("Registration successful. Brace yourself for disappointment.")
+            toast.success(getPassiveAggressiveMessage("register"))
           },
         })
       } catch (err) {
@@ -42,7 +54,10 @@ export const Register: React.FC = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="register-heading">
+      <h2 id="register-heading" className="text-xl font-semibold mb-4">
+        Register
+      </h2>
       <ErrorAnnouncer errors={errors} />
       <div>
         <label htmlFor="username" className="block text-sm font-medium text-gray-700">
@@ -57,9 +72,9 @@ export const Register: React.FC = () => {
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           aria-invalid={errors.username ? "true" : "false"}
-          aria-describedby="username-error"
+          aria-describedby={errors.username ? "username-error" : undefined}
         />
-        {errors.username && <ErrorMessage message={errors.username} />}
+        {errors.username && <ErrorMessage id="username-error" message={errors.username} />}
       </div>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -74,9 +89,9 @@ export const Register: React.FC = () => {
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           aria-invalid={errors.email ? "true" : "false"}
-          aria-describedby="email-error"
+          aria-describedby={errors.email ? "email-error" : undefined}
         />
-        {errors.email && <ErrorMessage message={errors.email} />}
+        {errors.email && <ErrorMessage id="email-error" message={errors.email} />}
       </div>
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -91,9 +106,9 @@ export const Register: React.FC = () => {
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           aria-invalid={errors.password ? "true" : "false"}
-          aria-describedby="password-error"
+          aria-describedby={errors.password ? "password-error" : undefined}
         />
-        {errors.password && <ErrorMessage message={errors.password} />}
+        {errors.password && <ErrorMessage id="password-error" message={errors.password} />}
       </div>
       <div>
         <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
@@ -108,14 +123,15 @@ export const Register: React.FC = () => {
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           aria-invalid={errors.confirmPassword ? "true" : "false"}
-          aria-describedby="confirmPassword-error"
+          aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
         />
-        {errors.confirmPassword && <ErrorMessage message={errors.confirmPassword} />}
+        {errors.confirmPassword && <ErrorMessage id="confirmPassword-error" message={errors.confirmPassword} />}
       </div>
       <button
         type="submit"
         disabled={!isValid || loading}
-        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-busy={loading}
       >
         {loading ? <LoadingSpinner /> : "Register"}
       </button>
