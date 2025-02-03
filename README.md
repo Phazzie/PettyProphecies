@@ -1,45 +1,39 @@
 # Passive-Aggressive Tarot
 
-Welcome to Passive-Aggressive Tarot, where your future is revealed with a side of snark.
-
-## Project Overview
-
-This project is a web application that provides tarot readings with a passive-aggressive twist. Users can create accounts, request readings, and view their past readings. The app is built using Next.js 13 with the new App Router, React, and TypeScript.
-
-## Features
-
-- User authentication (signup, login, logout)
-- Passive-aggressive tarot readings
-- User dashboard to view past readings
-- Dark mode support
-- Responsive design
-
-## Tech Stack
-
-- Next.js 13 (App Router)
-- React 18
-- TypeScript
-- Tailwind CSS
-- MongoDB (with Mongoose)
-- NextAuth.js for authentication
-- Vercel for deployment
+A Next.js application that provides sassy tarot readings.
 
 ## Project Structure
 
-\`\`\`
-passive-aggressive-tarot/
-├── app/
-│   ├── layout.tsx
-│   └── page.tsx  # Main page using App Router
-├── components/
-│   ├── Login.tsx
-│   ├── Register.tsx
-│   ├── TarotReading.tsx
-│   └── UserDashboard.tsx
-├── pages/
-│   └── api/  # API routes
-...
-\`\`\`
+- `/app`: Contains the main application pages and layouts (Next.js 13 App Router)
+- `/components`: Reusable React components
+- `/lib`: Utility functions and context providers
+- `/hooks`: Custom React hooks
+- `/styles`: Global styles and Tailwind CSS configuration
+- `/public`: Static assets
+- `/tests`: Jest test files
 
-This project uses Next.js 13 with the App Router for improved performance and easier route handling.
+## Key Features
+
+- User authentication (login/register)
+- Tarot readings with passive-aggressive interpretations
+- User dashboard for viewing past readings
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see `.env.example`)
+4. Run the development server: `npm run dev`
+
+## Deployment
+
+This project is set up for easy deployment on Vercel. Push to the main branch to trigger a new deployment.
+
+## Testing
+
+Run tests with: `npm test`
+
+## Contributing
+
+Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
 
