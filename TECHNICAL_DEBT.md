@@ -1,8 +1,9 @@
 # Technical Debt Catalog - Passive-Aggressive Tarot
 
 **Generated:** 2025-11-05
-**Version:** 1.0.0
-**Total Issues:** 68 (7 Critical, 30 High, 27 Medium, 4 Low)
+**Version:** 1.1.0
+**Total Issues:** 78 (9 Critical, 36 High, 29 Medium, 4 Low)
+**Includes:** 68 Original Code Review Issues + 10 Deployment Shortcuts
 
 ---
 
@@ -675,6 +676,480 @@ const limit = Math.min(
 **Location:** Some UI packages
 
 **Effort:** 1 hour
+
+---
+
+## Deployment Shortcuts & Implementation Gaps
+
+**Context:** During the initial "make it deployment-ready" work, several shortcuts were taken to get the build passing and infrastructure in place. These need to be addressed for production quality.
+
+### SHORTCUT-001: Simplified Console-Only Logger
+**Severity:** 🟠 High
+**Location:** `src/utils/logger.ts`
+**What Was Done:** Replaced winston with a simple console.log-based logger to avoid dependencies and get build passing
+
+**Current Implementation:**
+```typescript
+// Simple console-based logger - no file output, no log rotation, no centralized logging
+const wrappedLogger = {
+  error: (message: string, meta?: any) => {
+    console.error(formatLog("error", message, meta))
+  }
+}
+```
+
+**Production Issues:**
+- No log persistence (logs lost on container restart)
+- No log aggregation for distributed systems
+- Cannot search/analyze logs easily
+- No log rotation or storage management
+- Using `any` type for metadata
+
+**Proper Solution:**
+```bash
+npm install pino pino-pretty
+```
+
+```typescript
+import pino from 'pino'
+
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  formatters: {
+    level: (label) => {
+      return { level: label.toUpperCase() }
+    },
+  },
+  transport: process.env.NODE_ENV === 'development'
+    ? { target: 'pino-pretty', options: { colorize: true } }
+    : undefined,
+})
+
+export default logger
+```
+
+For production, integrate with:
+- **Vercel:** Use Vercel's built-in logging
+- **Docker:** Configure log driver (json-file with rotation, or fluentd/gelf)
+- **Observability:** Send to Datadog, New Relic, or LogDNA
+
+**Effort:** 2-3 hours
+**Priority:** High - Required for production debugging
+
+---
+
+### SHORTCUT-002: In-Memory Rate Limiter (Not Distributed)
+**Severity:** 🔴 Critical
+**Location:** `src/middleware/rateLimit.ts`
+**What Was Done:** Created simple Map-based rate limiter to replace express-rate-limit
+
+**Current Implementation:**
+```typescript
+// In-memory map - resets on restart, doesn't work across instances
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+```
+
+**Production Issues:**
+- **Serverless Incompatible:** Each Lambda/Vercel function has its own memory
+- **Multi-Instance Fail:** Load balanced servers have separate rate limit counters
+- **Memory Leak:** Map grows indefinitely, no cleanup of old entries
+- **Bypass Vulnerability:** Restart server = reset all rate limits
+
+**Proper Solution:**
+
+**For Vercel:**
+```typescript
+import { Ratelimit } from "@upstash/ratelimit"
+import { Redis } from "@upstash/redis"
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, "15 m"),
+})
+
+export async function rateLimitMiddleware(handler: Function) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    const ip = getIP(req)
+    const { success, limit, reset, remaining } = await ratelimit.limit(ip)
+
+    res.setHeader("X-RateLimit-Limit", limit.toString())
+    res.setHeader("X-RateLimit-Remaining", remaining.toString())
+    res.setHeader("X-RateLimit-Reset", new Date(reset).toISOString())
+
+    if (!success) {
+      return res.status(429).json({ error: "Too many requests" })
+    }
+
+    return handler(req, res)
+  }
+}
+```
+
+**For Docker:**
+```typescript
+import Redis from 'ioredis'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+})
+
+const rateLimiter = new RateLimiterRedis({
+  storeClient: redisClient,
+  points: 100,
+  duration: 15 * 60, // 15 minutes
+})
+```
+
+**Effort:** 4-6 hours (includes Redis/Upstash setup)
+**Priority:** Critical - Current implementation doesn't work in production
+
+---
+
+### SHORTCUT-003: In-Memory API Cache (Not Distributed)
+**Severity:** 🟠 High
+**Location:** `src/utils/api.ts:12`
+**What Was Done:** Simple object-based cache for API responses
+
+**Current Implementation:**
+```typescript
+const cache: { [key: string]: CacheItem<any> } = {}
+```
+
+**Production Issues:**
+- Same as rate limiter - doesn't work across instances/serverless
+- No cache invalidation strategy
+- No memory limit (can grow indefinitely)
+- Using `any` type
+
+**Proper Solution:**
+Either remove caching (Next.js has built-in fetch caching), or use:
+- SWR or React Query for client-side caching
+- Redis for server-side caching
+- Next.js native caching with `fetch()` and revalidation
+
+**Effort:** 2-3 hours
+**Priority:** High - Could cause memory issues or cache inconsistency
+
+---
+
+### SHORTCUT-004: Minimal Test Coverage
+**Severity:** 🟠 High
+**Location:** `__tests__/` directory
+**What Was Done:** Jest infrastructure set up, but only 7 test files exist
+
+**Current Test Files:**
+- `__tests__/AuthContext.test.tsx`
+- `__tests__/api/auth.test.ts`
+- `__tests__/errorHandler.test.ts`
+- `__tests__/middleware/errorHandler.test.ts`
+- `__tests__/data/tarotSpreads.test.ts`
+- `__tests__/data/tarotCards.test.ts`
+- `__tests__/useApiRequest.test.ts`
+- `__tests__/utils/api.test.ts`
+
+**Missing Critical Tests:**
+- ❌ Component integration tests (TarotReading, UserDashboard, HomePage)
+- ❌ API route E2E tests (actual HTTP requests)
+- ❌ Database integration tests with test MongoDB
+- ❌ Authentication flow E2E tests
+- ❌ Rate limiter tests
+- ❌ Form validation tests
+- ❌ Error boundary tests
+- ❌ Accessibility tests
+- ❌ SSR hydration tests
+
+**Coverage Target:** Should be >80% for critical paths
+
+**Proper Solution:**
+Add comprehensive test suite (covered in TEST-001 through TEST-006 above)
+
+**Effort:** 20-30 hours
+**Priority:** High - Cannot safely refactor without tests
+
+---
+
+### SHORTCUT-005: Global Mongoose Type Using `any`
+**Severity:** 🟡 Medium
+**Location:** `src/utils/database.ts:14`
+**What Was Done:** Used `any` type and eslint-disable to bypass TypeScript
+
+**Current Implementation:**
+```typescript
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: any
+}
+```
+
+**Proper Solution:**
+```typescript
+import type { Connection } from 'mongoose'
+
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: { conn: Connection | null; promise: Promise<Connection> | null } | undefined
+}
+```
+
+**Effort:** 10 minutes
+**Priority:** Medium - Works but not type-safe
+
+---
+
+### SHORTCUT-006: No Database Migration System
+**Severity:** 🟡 Medium
+**Location:** N/A - Not implemented
+**What Was Missing:** Schema changes require manual database updates
+
+**Impact:**
+- Cannot safely roll out schema changes
+- No version control for database structure
+- Risky deployments when models change
+
+**Proper Solution:**
+```bash
+npm install migrate-mongo
+```
+
+Create `migrations/` directory:
+```typescript
+// migrations/20251105-add-user-email-verification.ts
+export async function up(db, client) {
+  await db.collection('users').updateMany(
+    { emailVerified: { $exists: false } },
+    { $set: { emailVerified: false, verificationToken: null } }
+  )
+}
+
+export async function down(db, client) {
+  await db.collection('users').updateMany(
+    {},
+    { $unset: { emailVerified: "", verificationToken: "" } }
+  )
+}
+```
+
+**Effort:** 3-4 hours (setup + document process)
+**Priority:** Medium - Important for future maintenance
+
+---
+
+### SHORTCUT-007: No Email Service Implementation
+**Severity:** 🔴 Critical
+**Location:** `TECHNICAL_DEBT.md:220` (SEC-005 password reset)
+**What Was Missing:** Email functionality documented but not implemented
+
+**Current Code:**
+```typescript
+// TODO: Send email with reset link
+```
+
+**Impact:**
+- Cannot implement password reset (security issue)
+- Cannot send verification emails
+- No user notifications
+
+**Proper Solution:**
+Choose email provider:
+
+**Option 1: Resend (Modern, developer-friendly)**
+```bash
+npm install resend
+```
+
+```typescript
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export async function sendPasswordResetEmail(email: string, resetToken: string) {
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`
+
+  await resend.emails.send({
+    from: 'Passive-Aggressive Tarot <noreply@yourdomain.com>',
+    to: email,
+    subject: 'Password Reset Request (If You Can Remember Requesting It)',
+    html: `
+      <p>Someone (presumably you) requested a password reset.</p>
+      <p><a href="${resetUrl}">Reset your password here</a></p>
+      <p>This link expires in 1 hour. Try not to forget this time.</p>
+    `,
+  })
+}
+```
+
+**Option 2: SendGrid (Established, scalable)**
+```bash
+npm install @sendgrid/mail
+```
+
+**Effort:** 3-4 hours (provider setup + templates + testing)
+**Priority:** Critical - Required for SEC-005 (password reset)
+
+---
+
+### SHORTCUT-008: No Monitoring/Observability
+**Severity:** 🟠 High
+**Location:** N/A - Not implemented
+**What Was Missing:** No error tracking, performance monitoring, or analytics
+
+**Current State:**
+- Sentry imported but not fully configured
+- No performance metrics
+- No user session replay
+- No database query monitoring
+- No API endpoint analytics
+
+**Proper Solution:**
+
+**Sentry (Already started):**
+```typescript
+// lib/sentry.ts
+import * as Sentry from "@sentry/nextjs"
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [
+    new Sentry.BrowserTracing(),
+    new Sentry.Replay(),
+  ],
+})
+```
+
+**Add Performance Monitoring:**
+```bash
+npm install @vercel/analytics
+```
+
+```typescript
+import { Analytics } from '@vercel/analytics/react'
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Analytics />
+      </body>
+    </html>
+  )
+}
+```
+
+**Effort:** 4-6 hours
+**Priority:** High - Cannot debug production without this
+
+---
+
+### SHORTCUT-009: No Input Validation Library (Zod)
+**Severity:** 🟠 High
+**Location:** Multiple API routes
+**What Was Done:** Manual validation with simple if statements
+
+**Current Implementation:**
+```typescript
+if (!username || !email || !password) {
+  throw new ValidationError("Missing required fields")
+}
+```
+
+**Impact:**
+- Inconsistent validation across endpoints
+- No type inference from validation
+- Easy to miss edge cases
+- No standardized error messages
+
+**Zod Already in Dependencies:** Just not implemented
+
+**Proper Solution:**
+```typescript
+import { z } from 'zod'
+
+const registerSchema = z.object({
+  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/),
+  email: z.string().email(),
+  password: z.string().min(8).max(100).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
+})
+
+async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
+  const validation = registerSchema.safeParse(req.body)
+
+  if (!validation.success) {
+    return res.status(400).json({
+      error: "Validation failed",
+      details: validation.error.format(),
+    })
+  }
+
+  const { username, email, password } = validation.data
+  // ... rest of handler
+}
+```
+
+**Effort:** 4-6 hours (all API routes)
+**Priority:** High - Part of API-002 above
+
+---
+
+### SHORTCUT-010: Error Handling Using `any` Type
+**Severity:** 🟡 Medium
+**Location:** Multiple files
+**What Was Done:** Used `catch (error: any)` throughout codebase
+
+**Affected Files:**
+- `src/pages/api/auth/[...auth].ts:40`
+- `src/pages/api/user/readings.ts:30`
+- `src/models/User.ts:24`
+
+**Proper Solution:**
+```typescript
+// Create proper error type
+type MongoError = Error & { code?: number }
+
+try {
+  await user.save()
+} catch (error) {
+  if (error instanceof Error) {
+    const mongoError = error as MongoError
+    if (mongoError.code === 11000) {
+      throw new ValidationError("Username or email already exists")
+    }
+  }
+  throw error
+}
+```
+
+**Effort:** 1-2 hours
+**Priority:** Medium - Part of QUAL-002 above
+
+---
+
+## Summary of Shortcuts
+
+**Total Shortcuts Identified:** 10
+
+**By Priority:**
+- 🔴 Critical: 2 (Rate Limiter, Email Service)
+- 🟠 High: 6 (Logger, API Cache, Tests, Monitoring, Zod, Error Handling)
+- 🟡 Medium: 2 (Mongoose Type, Database Migrations)
+
+**Estimated Total Effort to Address All Shortcuts:** 44-63 hours
+
+**Most Critical for Production:**
+1. SHORTCUT-002: Fix rate limiter for distributed systems (6 hours)
+2. SHORTCUT-007: Implement email service (4 hours)
+3. SHORTCUT-001: Proper logging infrastructure (3 hours)
+4. SHORTCUT-008: Set up monitoring/observability (6 hours)
+
+**Quick Wins:**
+- SHORTCUT-005: Fix mongoose type (10 min)
+- SHORTCUT-009: Implement Zod (already in deps, 4-6 hours for full implementation)
 
 ---
 

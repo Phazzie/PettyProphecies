@@ -27,9 +27,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         totalPages: Math.ceil(total / limit),
         totalReadings: total,
       })
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching readings:", error)
-      res.status(500).json({ message: "Error fetching readings", error: error.message })
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      res.status(500).json({ message: "Error fetching readings", error: errorMessage })
     }
   } else {
     res.status(405).json({ message: "Method not allowed" })
