@@ -6,11 +6,9 @@ import { errorHandler } from "../../../middleware/errorHandler"
 import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError, AuthenticationError } from "../../../types/errors"
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
   throw new Error("JWT_SECRET is not set in environment variables")
-}
+})()
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
