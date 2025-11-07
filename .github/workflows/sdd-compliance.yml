@@ -1,0 +1,232 @@
+name: SDD Compliance
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Check for contract immutability violations
+  contract-immutability:
+    name: Contract Immutability Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Check for modified contracts
+        id: contracts-changed
+        run: |
+          # Get list of changed files in contracts/ directory
+          CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '^contracts/' || true)
+
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Warn on contract changes
+        if: steps.contracts-changed.outputs.changed == 'true'
+        run: |
+          echo "⚠️ WARNING: Contract files have been modified!"
+          echo ""
+          echo "Modified contracts:"
+          echo "${{ steps.contracts-changed.outputs.files }}"
+          echo ""
+          echo "⚠️ Per SDD methodology, contracts should be IMMUTABLE once defined."
+          echo "If breaking changes are needed, create new contract versions (v2, v3, etc.)"
+          echo ""
+          echo "If this is a new contract or a bug fix to an unreleased contract, you can proceed."
+          echo "Otherwise, please create a new version instead of modifying the existing contract."
+          exit 1
+
+  # Check for 'any' type escapes
+  no-any-types:
+    name: No 'any' Type Escapes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for 'any' types
+        run: |
+          # Search for 'any' type in src/, contracts/, and services/
+          ANY_FOUND=$(git grep -n ": any" src/ contracts/ services/ 2>/dev/null || true)
+          ANY_FOUND_AS=$(git grep -n "as any" src/ contracts/ services/ 2>/dev/null || true)
+
+          if [ -n "$ANY_FOUND" ] || [ -n "$ANY_FOUND_AS" ]; then
+            echo "❌ ERROR: Found 'any' type escapes (forbidden in SDD)"
+            echo ""
+            if [ -n "$ANY_FOUND" ]; then
+              echo "Found ': any' in:"
+              echo "$ANY_FOUND"
+              echo ""
+            fi
+            if [ -n "$ANY_FOUND_AS" ]; then
+              echo "Found 'as any' in:"
+              echo "$ANY_FOUND_AS"
+              echo ""
+            fi
+            echo "SDD requires strict type safety. Use 'unknown' and validate instead."
+            exit 1
+          fi
+          echo "✅ No 'any' type escapes found"
+
+  # Verify SEAMSLIST.md is updated
+  seams-documented:
+    name: Seams Documented
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Check for new contracts
+        id: new-contracts
+        run: |
+          # Get list of new contract files
+          NEW_CONTRACTS=$(git diff --name-status origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '^A' | grep 'contracts/.*\.ts$' | awk '{print $2}' || true)
+
+          if [ -n "$NEW_CONTRACTS" ]; then
+            echo "new=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$NEW_CONTRACTS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "new=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check SEAMSLIST.md updated
+        if: steps.new-contracts.outputs.new == 'true'
+        run: |
+          # Check if SEAMSLIST.md was modified
+          SEAMSLIST_UPDATED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep 'SEAMSLIST.md' || true)
+
+          if [ -z "$SEAMSLIST_UPDATED" ]; then
+            echo "⚠️ WARNING: New contracts added but SEAMSLIST.md not updated"
+            echo ""
+            echo "New contracts:"
+            echo "${{ steps.new-contracts.outputs.files }}"
+            echo ""
+            echo "Please update SEAMSLIST.md to document these new seams."
+            exit 1
+          fi
+          echo "✅ SEAMSLIST.md updated"
+
+  # Check for manual data transformations (code smell)
+  no-manual-transforms:
+    name: No Manual Transformations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for transformation functions
+        run: |
+          # Search for common transformation patterns
+          TRANSFORMS=$(git grep -n -E "function (adapt|transform|convert|map.*Data)" src/ services/ 2>/dev/null | grep -v "node_modules" || true)
+
+          if [ -n "$TRANSFORMS" ]; then
+            echo "⚠️ WARNING: Found potential manual data transformations"
+            echo ""
+            echo "Found transformation functions:"
+            echo "$TRANSFORMS"
+            echo ""
+            echo "Per SDD: Manual transformations create drift between contracts and implementation."
+            echo "Ensure these are necessary and properly tested."
+            echo ""
+            echo "If transforming external API data, isolate in an API gateway with its own tests."
+          fi
+          echo "✅ Manual transformation check complete"
+
+  # Verify mocks exist for all contracts
+  mock-coverage:
+    name: Mock Coverage Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check mock coverage
+        run: |
+          echo "Checking that all contracts have corresponding mocks..."
+
+          # Get all contract files (excluding types/ directory and index.ts)
+          CONTRACTS=$(find contracts/ -name "*.ts" -not -path "*/types/*" -not -name "index.ts" -not -name "README.md" 2>/dev/null || true)
+
+          # If no contracts exist yet, skip check
+          if [ -z "$CONTRACTS" ]; then
+            echo "✅ No contracts defined yet - skipping mock coverage check"
+            exit 0
+          fi
+
+          MISSING_MOCKS=""
+          for contract in $CONTRACTS; do
+            # Extract filename without path and extension
+            filename=$(basename "$contract" .ts)
+
+            # Check if mock exists
+            if [ ! -f "services/mock/${filename}Mock.ts" ]; then
+              MISSING_MOCKS="${MISSING_MOCKS}${filename}\n"
+            fi
+          done
+
+          if [ -n "$MISSING_MOCKS" ]; then
+            echo "❌ ERROR: Contracts missing mock implementations:"
+            echo -e "$MISSING_MOCKS"
+            echo ""
+            echo "Per SDD: Every contract must have a mock implementation."
+            exit 1
+          fi
+
+          echo "✅ All contracts have mock implementations"
+
+  # SDD compliance summary
+  sdd-summary:
+    name: SDD Compliance Summary
+    runs-on: ubuntu-latest
+    needs: [contract-immutability, no-any-types, seams-documented, no-manual-transforms, mock-coverage]
+    if: always()
+    steps:
+      - name: Check compliance status
+        run: |
+          echo "## SDD Compliance Results"
+          echo ""
+          echo "- Contract Immutability: ${{ needs.contract-immutability.result }}"
+          echo "- No 'any' Types: ${{ needs.no-any-types.result }}"
+          echo "- Seams Documented: ${{ needs.seams-documented.result }}"
+          echo "- No Manual Transforms: ${{ needs.no-manual-transforms.result }}"
+          echo "- Mock Coverage: ${{ needs.mock-coverage.result }}"
+          echo ""
+
+          if [[ "${{ needs.contract-immutability.result }}" != "success" ]] || \
+             [[ "${{ needs.no-any-types.result }}" != "success" ]] || \
+             [[ "${{ needs.seams-documented.result }}" != "success" ]] || \
+             [[ "${{ needs.no-manual-transforms.result }}" != "success" ]] || \
+             [[ "${{ needs.mock-coverage.result }}" != "success" ]]; then
+            echo "❌ SDD compliance checks failed. Please review the errors above."
+            exit 1
+          fi
+
+          echo "✅ All SDD compliance checks passed!"
