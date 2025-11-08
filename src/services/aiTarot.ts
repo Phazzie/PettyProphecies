@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import type { TarotCard, TarotSpread } from "@/src/data/tarotSpreads"
+import type { TarotCard } from "@/src/data/tarotCards"
+import type { TarotSpread } from "@/src/data/tarotSpreads"
 
 /**
  * AI-Powered Tarot Reading Service
