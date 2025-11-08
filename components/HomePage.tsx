@@ -1,27 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/AuthContext"
-import { Login } from "@/components/Login"
-import { Register } from "@/components/Register"
+import { Login } from "@/src/components/Login"
+import { Register } from "@/src/components/Register"
 import dynamic from "next/dynamic"
 import { Suspense } from "react"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 
-const TarotReading = dynamic(() => import("@/components/TarotReading"), {
+const TarotReading = dynamic(() => import("@/src/components/TarotReading").then((mod) => mod.TarotReading), {
   loading: () => <LoadingSpinner />,
 })
 
-const UserDashboard = dynamic(() => import("@/components/UserDashboard"), {
+const UserDashboard = dynamic(() => import("@/src/components/UserDashboard").then((mod) => mod.UserDashboard), {
   loading: () => <LoadingSpinner />,
 })
 
-import { ProtectedRoute } from "@/components/ProtectedRoute"
-import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { ProtectedRoute } from "@/src/components/ProtectedRoute"
+import ErrorBoundary from "@/src/components/ErrorBoundary"
 
 export function HomePage() {
   const { isAuthenticated, logout } = useAuth()
   const [activeTab, setActiveTab] = useState<"reading" | "dashboard">("reading")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent SSR mismatch by not rendering until client-side
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   return (
     <ErrorBoundary>

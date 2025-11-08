@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword } from "../utils/validation"
-import { toast } from "react-toastify"
+import { toast } from "sonner"
 import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
@@ -24,7 +24,7 @@ export const Login: React.FC = () => {
   const { request, loading } = useApiRequest<{ token: string }>()
   const [success, setSuccess] = useState(false)
 
-  const errorRef = useFocusError(Object.values(errors).find(Boolean) || null)
+  // const errorRef = useFocusError(Object.values(errors).find(Boolean) || null)
 
   /**
    * Handles form submission
@@ -39,7 +39,7 @@ export const Login: React.FC = () => {
           url: "/api/auth/login",
           method: "POST",
           body: values,
-          onSuccess: (data) => {
+          onSuccess: (data: { token: string }) => {
             login(data.token)
             toast.success(getPassiveAggressiveMessage("login"))
             setSuccess(true)
@@ -72,7 +72,7 @@ export const Login: React.FC = () => {
           aria-invalid={errors.email ? "true" : "false"}
           aria-describedby={errors.email ? "email-error" : undefined}
         />
-        {errors.email && <ErrorMessage id="email-error" message={errors.email} ref={errorRef} />}
+        {errors.email && <ErrorMessage id="email-error" message={errors.email} />}
       </div>
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">

@@ -62,7 +62,7 @@ export const UserDashboard: React.FC = () => {
         <>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {readings.map((reading) => (
-              <li key={reading._id} className="py-4">
+              <li key={reading._id?.toString()} className="py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{reading.spreadName}</h3>

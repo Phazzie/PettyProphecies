@@ -6,11 +6,9 @@ import { errorHandler } from "../../../middleware/errorHandler"
 import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError, AuthenticationError } from "../../../types/errors"
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
   throw new Error("JWT_SECRET is not set in environment variables")
-}
+})()
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
@@ -39,9 +37,12 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
     const user = new User({ username, email, password })
     await user.save()
     res.status(201).json({ message: "User registered successfully" })
-  } catch (error: any) {
-    if (error.code === 11000) {
-      throw new ValidationError("Username or email already exists")
+  } catch (error) {
+    if (error instanceof Error) {
+      const mongoError = error as Error & { code?: number }
+      if (mongoError.code === 11000) {
+        throw new ValidationError("Username or email already exists")
+      }
     }
     throw error
   }

@@ -31,7 +31,7 @@ export const useFormValidation = (initialState: { [key: string]: string }, rules
   )
 
   const handleChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const { name, value } = event.target
       setValues((prevValues) => ({
         ...prevValues,

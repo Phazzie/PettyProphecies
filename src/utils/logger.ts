@@ -1,50 +1,52 @@
-import winston from "winston"
 import { logAnalyzer } from "./logAnalyzer"
 
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json(),
-  ),
-  defaultMeta: { service: "passive-aggressive-tarot" },
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-    }),
-    new winston.transports.File({ filename: "error.log", level: "error" }),
-    new winston.transports.File({ filename: "combined.log" }),
-  ],
-})
+type LogLevel = "error" | "warn" | "info" | "debug"
 
-// If we're not in production, log to the console with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
-if (process.env.NODE_ENV !== "production") {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.simple(),
-    }),
-  )
+const LOG_LEVELS: Record<LogLevel, number> = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
 }
 
-// Wrap the logger methods to include log analysis
+const currentLevel: LogLevel = (process.env.LOG_LEVEL as LogLevel) || "info"
+const currentLevelValue = LOG_LEVELS[currentLevel]
+
+function formatLog(level: LogLevel, message: string, meta?: any): string {
+  const timestamp = new Date().toISOString()
+  const metaStr = meta ? ` ${JSON.stringify(meta)}` : ""
+  return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`
+}
+
+function shouldLog(level: LogLevel): boolean {
+  return LOG_LEVELS[level] <= currentLevelValue
+}
+
+// Simple console-based logger for Next.js
 const wrappedLogger = {
   error: (message: string, meta?: any) => {
-    logAnalyzer.analyzeLog("error", message, meta)
-    logger.error(message, meta)
+    if (shouldLog("error")) {
+      logAnalyzer.analyzeLog("error", message, meta)
+      console.error(formatLog("error", message, meta))
+    }
   },
   warn: (message: string, meta?: any) => {
-    logAnalyzer.analyzeLog("warn", message, meta)
-    logger.warn(message, meta)
+    if (shouldLog("warn")) {
+      logAnalyzer.analyzeLog("warn", message, meta)
+      console.warn(formatLog("warn", message, meta))
+    }
   },
   info: (message: string, meta?: any) => {
-    logAnalyzer.analyzeLog("info", message, meta)
-    logger.info(message, meta)
+    if (shouldLog("info")) {
+      logAnalyzer.analyzeLog("info", message, meta)
+      console.info(formatLog("info", message, meta))
+    }
   },
   debug: (message: string, meta?: any) => {
-    logAnalyzer.analyzeLog("debug", message, meta)
-    logger.debug(message, meta)
+    if (shouldLog("debug")) {
+      logAnalyzer.analyzeLog("debug", message, meta)
+      console.debug(formatLog("debug", message, meta))
+    }
   },
 }
 

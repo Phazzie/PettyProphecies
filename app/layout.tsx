@@ -1,5 +1,7 @@
 import { AuthProvider } from "@/lib/AuthContext"
-import "@/styles/globals.css"
+import { SentryProvider } from "@/components/SentryProvider"
+import { Toaster } from "sonner"
+import "./globals.css"
 import type React from "react"
 
 export const metadata = {
@@ -15,12 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <SentryProvider>
+          <AuthProvider>
+            {children}
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
+        </SentryProvider>
       </body>
     </html>
   )
 }
-
-
-
-import './globals.css'

@@ -1,4 +1,4 @@
-import { toast } from "react-toastify"
+import { toast } from "sonner"
 
 /**
  * Represents a cached item with its data and expiry time
