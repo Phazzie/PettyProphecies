@@ -75,7 +75,7 @@ Give a reading that is:
 Write the reading now. Be snarky, be insightful, be memorable.`
 
     const completion = await xai.chat.completions.create({
-      model: "grok-beta",
+      model: "grok-4-fast-reasoning",
       messages: [
         {
           role: "user",
@@ -113,7 +113,7 @@ export function isAIAvailable(): boolean {
 export function getAIModelInfo() {
   return {
     available: isAIAvailable(),
-    model: "grok-beta",
+    model: "grok-4-fast-reasoning",
     provider: "xAI Grok",
   }
 }
