@@ -1,18 +1,22 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import type { TarotCard, TarotSpread } from "@/src/data/tarotSpreads"
+import OpenAI from "openai"
+import type { TarotCard } from "@/src/data/tarotCards"
+import type { TarotSpread } from "@/src/data/tarotSpreads"
 
 /**
  * AI-Powered Tarot Reading Service
- * Uses Google Gemini to generate dynamic, personalized passive-aggressive tarot readings
+ * Uses xAI's Grok to generate dynamic, personalized passive-aggressive tarot readings
  */
 
-const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY
+const XAI_API_KEY = process.env.XAI_API_KEY
 
-let genAI: GoogleGenerativeAI | null = null
+let xai: OpenAI | null = null
 
-// Initialize Google AI only if API key is available
-if (GOOGLE_AI_API_KEY) {
-  genAI = new GoogleGenerativeAI(GOOGLE_AI_API_KEY)
+// Initialize xAI (uses OpenAI SDK with xAI endpoint) only if API key is available
+if (XAI_API_KEY) {
+  xai = new OpenAI({
+    apiKey: XAI_API_KEY,
+    baseURL: "https://api.x.ai/v1",
+  })
 }
 
 export interface AIReadingOptions {
@@ -29,14 +33,12 @@ export async function generateAIReading(options: AIReadingOptions): Promise<stri
   const { cards, spread, userQuestion, isReversed = [] } = options
 
   // Fallback to template if AI not available
-  if (!genAI) {
-    console.warn("Google AI not configured, using template reading")
+  if (!xai) {
+    console.warn("xAI not configured, using template reading")
     return spread.interpret(cards)
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-
     // Build card descriptions
     const cardDescriptions = cards
       .map((card, index) => {
@@ -72,9 +74,30 @@ Give a reading that is:
 
 Write the reading now. Be snarky, be insightful, be memorable.`
 
-    const result = await model.generateContent(prompt)
-    const response = result.response
-    const text = response.text()
+    const completion = await xai.chat.completions.create({
+      model: "grok-4-fast-reasoning",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.8,
+      max_tokens: 1000,
+    })
+
+    if (
+      !completion.choices ||
+      !Array.isArray(completion.choices) ||
+      completion.choices.length === 0 ||
+      !completion.choices[0].message ||
+      typeof completion.choices[0].message.content !== "string" ||
+      completion.choices[0].message.content.trim() === ""
+    ) {
+      throw new Error("Malformed or empty response from xAI: " + JSON.stringify(completion))
+    }
+
+    const text = completion.choices[0].message.content
 
     return text
   } catch (error) {
@@ -88,7 +111,7 @@ Write the reading now. Be snarky, be insightful, be memorable.`
  * Check if AI is available
  */
 export function isAIAvailable(): boolean {
-  return genAI !== null
+  return xai !== null
 }
 
 /**
@@ -97,7 +120,7 @@ export function isAIAvailable(): boolean {
 export function getAIModelInfo() {
   return {
     available: isAIAvailable(),
-    model: "gemini-1.5-flash",
-    provider: "Google Gemini",
+    model: "grok-4-fast-reasoning",
+    provider: "xAI Grok",
   }
 }

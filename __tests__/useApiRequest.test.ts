@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react-hooks"
+import { renderHook, act } from "@testing-library/react"
 import { useApiRequest } from "@/hooks/useApiRequest"
 import { AppError } from "@/lib/errorHandler"
 import { jest } from "@jest/globals" // Added import for jest
