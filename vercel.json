@@ -4,14 +4,14 @@
     "MONGODB_URI": "@mongodb-uri",
     "JWT_SECRET": "@jwt-secret",
     "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn",
-    "GOOGLE_AI_API_KEY": "@google-ai-api-key"
+    "XAI_API_KEY": "@xai-api-key"
   },
   "build": {
     "env": {
       "MONGODB_URI": "@mongodb-uri",
       "JWT_SECRET": "@jwt-secret",
       "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn",
-      "GOOGLE_AI_API_KEY": "@google-ai-api-key"
+      "XAI_API_KEY": "@xai-api-key"
     }
   }
 }
