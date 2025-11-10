@@ -2,9 +2,8 @@ import { describe, test, expect } from "@jest/globals"
 import { getRandomCard, getCardByName, getCardByNumber, tarotCards } from "../../src/data/tarotCards"
 
 describe("Tarot Card Functions", () => {
-  test("tarotCards array contains 5 Major Arcana cards (to be expanded to 22)", () => {
-    // TODO: Expand to full 22 Major Arcana cards
-    expect(tarotCards.length).toBe(5)
+  test("tarotCards array contains all 22 Major Arcana cards", () => {
+    expect(tarotCards.length).toBe(22)
   })
 
   test("getRandomCard returns a valid card", () => {

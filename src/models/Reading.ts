@@ -18,5 +18,5 @@ const readingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 })
 
-export const Reading = mongoose.model<IReading>("Reading", readingSchema)
+export const Reading = mongoose.models.Reading || mongoose.model<IReading>("Reading", readingSchema)
 

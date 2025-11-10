@@ -4,14 +4,16 @@
     "MONGODB_URI": "@mongodb-uri",
     "JWT_SECRET": "@jwt-secret",
     "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn",
-    "XAI_API_KEY": "@xai-api-key"
+    "XAI_API_KEY": "@xai-api-key",
+    "LOG_LEVEL": "@log-level"
   },
   "build": {
     "env": {
       "MONGODB_URI": "@mongodb-uri",
       "JWT_SECRET": "@jwt-secret",
       "NEXT_PUBLIC_SENTRY_DSN": "@sentry-dsn",
-      "XAI_API_KEY": "@xai-api-key"
+      "XAI_API_KEY": "@xai-api-key",
+      "LOG_LEVEL": "@log-level"
     }
   }
 }

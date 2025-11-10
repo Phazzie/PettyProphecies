@@ -5,6 +5,8 @@ import { connectToDatabase } from "../../../utils/database"
 import { errorHandler } from "../../../middleware/errorHandler"
 import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError, AuthenticationError } from "../../../types/errors"
+import { registerSchema, loginSchema, validateRequest, formatZodError } from "../../../utils/schemas"
+import { z } from "zod"
 
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
   throw new Error("JWT_SECRET is not set in environment variables")
@@ -27,17 +29,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
-  const { username, email, password } = req.body
-
-  if (!username || !email || !password) {
-    throw new ValidationError("Missing required fields")
-  }
-
   try {
-    const user = new User({ username, email, password })
+    const validatedData = validateRequest(registerSchema, req.body)
+
+    const user = new User({
+      username: validatedData.username,
+      email: validatedData.email,
+      password: validatedData.password,
+    })
     await user.save()
     res.status(201).json({ message: "User registered successfully" })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const formattedError = formatZodError(error)
+      return res.status(400).json(formattedError)
+    }
     if (error instanceof Error) {
       const mongoError = error as Error & { code?: number }
       if (mongoError.code === 11000) {
@@ -49,24 +55,28 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleLogin(req: NextApiRequest, res: NextApiResponse) {
-  const { email, password } = req.body
+  try {
+    const validatedData = validateRequest(loginSchema, req.body)
 
-  if (!email || !password) {
-    throw new ValidationError("Missing email or password")
+    const user = await User.findOne({ email: validatedData.email })
+    if (!user) {
+      throw new AuthenticationError("Invalid credentials")
+    }
+
+    const isMatch = await user.comparePassword(validatedData.password)
+    if (!isMatch) {
+      throw new AuthenticationError("Invalid credentials")
+    }
+
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "1h" })
+    res.status(200).json({ token })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const formattedError = formatZodError(error)
+      return res.status(400).json(formattedError)
+    }
+    throw error
   }
-
-  const user = await User.findOne({ email })
-  if (!user) {
-    throw new AuthenticationError("Invalid credentials")
-  }
-
-  const isMatch = await user.comparePassword(password)
-  if (!isMatch) {
-    throw new AuthenticationError("Invalid credentials")
-  }
-
-  const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "1h" })
-  res.status(200).json({ token })
 }
 
 function handleLogout(req: NextApiRequest, res: NextApiResponse) {

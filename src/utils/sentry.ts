@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/react"
-import { BrowserTracing } from "@sentry/tracing"
+import { BrowserTracing } from "@sentry/react"
 
 export const initSentry = () => {
   Sentry.init({
