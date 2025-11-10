@@ -6,8 +6,6 @@ fetchMock.enableMocks()
 describe("apiRequest", () => {
   beforeEach(() => {
     fetchMock.resetMocks()
-    // Clear the cache between tests by resetting modules
-    jest.resetModules()
   })
 
   it("should make a successful API request", async () => {

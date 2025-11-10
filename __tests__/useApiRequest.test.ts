@@ -43,11 +43,14 @@ describe("useApiRequest", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
         expect((error as Error).message).toContain("HTTP error")
+        // Verify status code is properly set
+        expect((error as any).status).toBe(404)
       }
     })
 
     expect(result.current.loading).toBe(false)
     expect(result.current.error).toBeDefined()
+    expect(result.current.error?.status).toBe(404)
   })
 })
 
