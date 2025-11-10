@@ -220,3 +220,38 @@ export function getCardByNumber(number: number): TarotCard | undefined {
   return tarotCards.find((card) => card.number === number)
 }
 
+/**
+ * Draw multiple unique cards with reversal state and position labels
+ * Ensures no duplicate cards in a single reading
+ */
+export function drawCardsWithReversal(count: number, positions: string[]) {
+  if (count > tarotCards.length) {
+    throw new Error(`Cannot draw ${count} unique cards from a deck of ${tarotCards.length}`)
+  }
+
+  if (count !== positions.length) {
+    throw new Error(`Number of cards (${count}) must match number of positions (${positions.length})`)
+  }
+
+  // Create a shuffled copy of all cards to ensure uniqueness
+  const availableCards = [...tarotCards]
+  const drawnCards = []
+
+  for (let i = 0; i < count; i++) {
+    // Pick a random card from remaining available cards
+    const randomIndex = Math.floor(Math.random() * availableCards.length)
+    const card = availableCards.splice(randomIndex, 1)[0]
+
+    // Determine reversal state (50% probability)
+    const isReversed = Math.random() < 0.5
+
+    drawnCards.push({
+      ...card,
+      isReversed,
+      position: positions[i],
+    })
+  }
+
+  return drawnCards
+}
+

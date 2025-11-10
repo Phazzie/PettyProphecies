@@ -5,15 +5,23 @@ import { requestLogger } from "../../middleware/requestLogger"
 import { rateLimitMiddleware } from "../../middleware/rateLimit"
 import { getSpreadByName } from "../../data/tarotSpreads"
 import { connectToDatabase } from "../../utils/database"
-import { Reading } from "../../models/Reading"
+import { Reading, type IReadingCard } from "../../models/Reading"
 import logger from "../../utils/logger"
 import { ValidationError, DatabaseError } from "../../types/errors"
 import { z } from "zod"
 import { validateRequest, formatZodError } from "../../utils/schemas"
+import { generateAIReading } from "../../services/aiTarot"
+import type { TarotCard } from "../../data/tarotCards"
 
 // Inline Zod schemas for tarot reading endpoints
 const createReadingRequestSchema = z.object({
   spreadName: z.string().min(1, "Spread name is required").max(100, "Spread name is too long"),
+  userQuestion: z
+    .string()
+    .max(500, "Question must be 500 characters or less")
+    .optional()
+    .nullable()
+    .transform((val) => (val?.trim() || null)),
 })
 
 const updateRatingRequestSchema = z.object({
@@ -33,19 +41,79 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         throw new ValidationError("Invalid spread name")
       }
 
+      // Generate reading cards with reversal and position data
       const reading = spread.getReading()
-      const interpretation = spread.interpret(reading)
+
+      // Extract reversal state from DrawnCard objects
+      const isReversed = reading.map((card) => card.isReversed)
+
+      // Build full card data with reversal and position info
+      const cardData: IReadingCard[] = reading.map((card) => ({
+        name: card.name,
+        number: card.number,
+        isReversed: card.isReversed,
+        position: card.position,
+      }))
+
+      let interpretation: string
+      let aiGenerated = false
+
+      try {
+        // Attempt AI-generated reading with 10-second timeout
+        const aiPromise = generateAIReading({
+          cards: reading,
+          spread,
+          userQuestion: validatedData.userQuestion || undefined,
+          isReversed,
+        })
+
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error("AI reading timeout")), 10000)
+        })
+
+        interpretation = await Promise.race([aiPromise, timeoutPromise])
+
+        // Validate AI response
+        if (!interpretation || interpretation.trim().length < 100) {
+          logger.warn("AI response too short or empty, falling back to template", {
+            responseLength: interpretation?.length || 0,
+          })
+          throw new Error("Invalid AI response")
+        }
+
+        aiGenerated = true
+        logger.info("AI reading generated successfully", {
+          userId: req.userId,
+          spreadName: validatedData.spreadName,
+        })
+      } catch (error) {
+        // Fallback to template interpretation on any AI failure
+        logger.warn("AI reading failed, using template fallback", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          userId: req.userId,
+          spreadName: validatedData.spreadName,
+        })
+        interpretation = spread.interpret(reading)
+        aiGenerated = false
+      }
 
       try {
         const newReading = new Reading({
           userId: req.userId,
           spreadName: validatedData.spreadName,
-          cards: reading.map((card) => card.name),
+          cards: cardData,
           interpretation,
+          userQuestion: validatedData.userQuestion,
+          aiGenerated,
         })
         await newReading.save()
 
-        logger.info("New reading created", { userId: req.userId, spreadName: validatedData.spreadName })
+        logger.info("New reading created", {
+          userId: req.userId,
+          spreadName: validatedData.spreadName,
+          hasQuestion: !!validatedData.userQuestion,
+          aiGenerated,
+        })
 
         res.status(200).json({ reading, interpretation, readingId: newReading._id })
       } catch (error) {

@@ -56,3 +56,71 @@ describe("Tarot Spread Functions", () => {
   })
 })
 
+describe("Tarot Spread DrawnCard Support", () => {
+  const allSpreads = [
+    maybeItsYouSpread,
+    doingYourBestSpread,
+    quarterLifeCrisisSpread,
+    selfCareAvoidanceSpread,
+    podcastIdeaSpread,
+    plantParentSpread,
+  ]
+
+  allSpreads.forEach((spread) => {
+    test(`${spread.name} returns DrawnCard objects with isReversed field`, () => {
+      const reading = spread.getReading()
+
+      reading.forEach((card) => {
+        expect(card).toHaveProperty("isReversed")
+        expect(typeof card.isReversed).toBe("boolean")
+      })
+    })
+
+    test(`${spread.name} returns DrawnCard objects with position field`, () => {
+      const reading = spread.getReading()
+
+      reading.forEach((card, index) => {
+        expect(card).toHaveProperty("position")
+        expect(typeof card.position).toBe("string")
+        expect(card.position).toBe(spread.positions[index])
+      })
+    })
+
+    test(`${spread.name} positions match spread configuration`, () => {
+      const reading = spread.getReading()
+
+      expect(reading.length).toBe(spread.positions.length)
+      reading.forEach((card, index) => {
+        expect(card.position).toBe(spread.positions[index])
+      })
+    })
+
+    test(`${spread.name} DrawnCard objects contain all TarotCard properties`, () => {
+      const reading = spread.getReading()
+
+      reading.forEach((card) => {
+        // Standard TarotCard properties
+        expect(card).toHaveProperty("name")
+        expect(card).toHaveProperty("number")
+        expect(card).toHaveProperty("description")
+        expect(card).toHaveProperty("upright")
+        expect(card).toHaveProperty("reversed")
+        expect(card).toHaveProperty("passiveAggressive")
+
+        // DrawnCard extensions
+        expect(card).toHaveProperty("isReversed")
+        expect(card).toHaveProperty("position")
+      })
+    })
+  })
+
+  test("no duplicate cards in a single reading", () => {
+    // Test with a spread - each card should be unique
+    const reading = maybeItsYouSpread.getReading()
+    const cardNumbers = reading.map((card) => card.number)
+    const uniqueCardNumbers = new Set(cardNumbers)
+
+    expect(uniqueCardNumbers.size).toBe(cardNumbers.length)
+  })
+})
+

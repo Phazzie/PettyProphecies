@@ -1,10 +1,15 @@
-import { type TarotCard, getRandomCard } from "./tarotCards"
+import { type TarotCard, getRandomCard, drawCardsWithReversal } from "./tarotCards"
+
+export interface DrawnCard extends TarotCard {
+  isReversed: boolean
+  position: string
+}
 
 export interface TarotSpread {
   name: string
   description: string
   positions: string[]
-  getReading: () => TarotCard[]
+  getReading: () => DrawnCard[]
   interpret: (cards: TarotCard[]) => string
 }
 
@@ -18,10 +23,7 @@ export const maybeItsYouSpread: TarotSpread = {
     "What You Need to Own Up To",
     "How to Grow (If You Can)",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, maybeItsYouSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${maybeItsYouSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
@@ -40,10 +42,7 @@ export const doingYourBestSpread: TarotSpread = {
     "Room for Improvement",
     "A Pat on the Back (Sort of)",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, doingYourBestSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${doingYourBestSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
@@ -62,10 +61,7 @@ export const quarterLifeCrisisSpread: TarotSpread = {
     "How to Get Over Yourself",
     "Your Next Existential Crisis",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, quarterLifeCrisisSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${quarterLifeCrisisSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
@@ -84,10 +80,7 @@ export const selfCareAvoidanceSpread: TarotSpread = {
     "How It's Affecting You",
     "A Real Solution (Hint: It's Not a Bath Bomb)",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, selfCareAvoidanceSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${selfCareAvoidanceSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
@@ -106,10 +99,7 @@ export const podcastIdeaSpread: TarotSpread = {
     "Why People Might Listen Anyway",
     "How to Stand Out (Good Luck)",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, podcastIdeaSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${podcastIdeaSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
@@ -128,10 +118,7 @@ export const plantParentSpread: TarotSpread = {
     "How to Actually Keep It Alive",
     "Your Next Victim (I Mean, Plant)",
   ],
-  getReading: () =>
-    Array(5)
-      .fill(null)
-      .map(() => getRandomCard()),
+  getReading: () => drawCardsWithReversal(5, plantParentSpread.positions),
   interpret: (cards: TarotCard[]) => {
     return (
       cards.map((card, index) => `${plantParentSpread.positions[index]}: ${card.passiveAggressive}`).join("\n") +
