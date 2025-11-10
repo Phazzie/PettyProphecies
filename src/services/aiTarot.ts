@@ -86,11 +86,18 @@ Write the reading now. Be snarky, be insightful, be memorable.`
       max_tokens: 1000,
     })
 
-    const text = completion.choices[0]?.message?.content || ""
-
-    if (!text) {
-      throw new Error("No response from xAI")
+    if (
+      !completion.choices ||
+      !Array.isArray(completion.choices) ||
+      completion.choices.length === 0 ||
+      !completion.choices[0].message ||
+      typeof completion.choices[0].message.content !== "string" ||
+      completion.choices[0].message.content.trim() === ""
+    ) {
+      throw new Error("Malformed or empty response from xAI: " + JSON.stringify(completion))
     }
+
+    const text = completion.choices[0].message.content
 
     return text
   } catch (error) {
