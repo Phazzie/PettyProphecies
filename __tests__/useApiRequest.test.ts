@@ -1,17 +1,9 @@
 import { renderHook, act } from "@testing-library/react"
-import { useApiRequest } from "@/hooks/useApiRequest"
-import { AppError } from "@/lib/errorHandler"
-import { jest } from "@jest/globals" // Added import for jest
+import { useApiRequest } from "@/src/hooks/useApiRequest"
+import { jest } from "@jest/globals"
 
 // Mock fetch
 global.fetch = jest.fn()
-
-// Mock toast
-jest.mock("react-toastify", () => ({
-  toast: {
-    error: jest.fn(),
-  },
-}))
 
 describe("useApiRequest", () => {
   beforeEach(() => {
@@ -46,14 +38,19 @@ describe("useApiRequest", () => {
     await act(async () => {
       try {
         await result.current.request({ url: "https://api.example.com" })
+        // Should not reach here
+        expect(true).toBe(false)
       } catch (error) {
-        expect(error).toBeInstanceOf(AppError)
-        expect((error as AppError).code).toBe("API_ERROR")
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toContain("HTTP error")
+        // Verify status code is properly set
+        expect((error as any).status).toBe(404)
       }
     })
 
     expect(result.current.loading).toBe(false)
-    expect(result.current.error).toBeInstanceOf(AppError)
+    expect(result.current.error).toBeDefined()
+    expect(result.current.error?.status).toBe(404)
   })
 })
 

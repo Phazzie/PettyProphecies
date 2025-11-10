@@ -34,7 +34,9 @@ export const useApiRequest = <T>() => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const error = new Error(`HTTP error! status: ${response.status}`) as ApiError;
+        error.status = response.status;
+        throw error;
       }
 
       const data = await response.json();
@@ -46,7 +48,10 @@ export const useApiRequest = <T>() => {
       return data;
     } catch (e) {
       const apiError = e as ApiError;
-      apiError.status = apiError.status || 500;
+      // Ensure error has a status code
+      if (!apiError.status) {
+        apiError.status = 500;
+      }
       setError(apiError);
       handleApiError(apiError);
       throw apiError;
