@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -102,7 +102,7 @@
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -114,32 +114,32 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">"use client"
 &nbsp;
-import React, { type ErrorInfo, type ReactNode } from <span class="cstat-no" title="statement not covered" >"react"</span>
+import React, { type ErrorInfo, type ReactNode } from "react"
 &nbsp;
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -150,29 +150,29 @@ interface ErrorBoundaryState {
 }
 &nbsp;
 class ErrorBoundary extends React.Component&lt;ErrorBoundaryProps, ErrorBoundaryState&gt; {
-<span class="fstat-no" title="function not covered" >  constructor(p</span>rops: ErrorBoundaryProps) {
-<span class="cstat-no" title="statement not covered" >    super(props)</span>
-<span class="cstat-no" title="statement not covered" >    this.state = { hasError: false }</span>
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  static g</span>etDerivedStateFromError(_: Error): ErrorBoundaryState {
-<span class="cstat-no" title="statement not covered" >    return { hasError: true }</span>
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true }
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  componentDidCatch(e</span>rror: Error, errorInfo: ErrorInfo) {
-<span class="cstat-no" title="statement not covered" >    console.error("Uncaught error:", error, errorInfo)</span>
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo)
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  render() {</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (this.state.hasError) {</span>
+  render() {
+    if (this.state.hasError) {
       return &lt;h1&gt;Something went wrong. Please try refreshing the page.&lt;/h1&gt;
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return this.props.children</span>
+    return this.props.children
   }
 }
 &nbsp;
-export { <span class="cstat-no" title="statement not covered" >ErrorBoundary }</span>
+export { ErrorBoundary }
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
 
@@ -181,7 +181,7 @@ export { <span class="cstat-no" title="statement not covered" >ErrorBoundary }</
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T05:08:53.789Z
+                at 2025-11-11T05:39:09.412Z
             </div>
         <script src="../prettify.js"></script>
         <script>

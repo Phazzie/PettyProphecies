@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -93,63 +93,63 @@
 <a name='L28'></a><a href='#L28'>28</a>
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
-<a name='L31'></a><a href='#L31'>31</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L31'></a><a href='#L31'>31</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">26x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">21x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export class <span class="cstat-no" title="statement not covered" >ApiError </span>extends Error {
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export class ApiError extends Error {
   statusCode: number
-<span class="fstat-no" title="function not covered" >  constructor(s</span>tatusCode: number, message: string) {
-<span class="cstat-no" title="statement not covered" >    super(message)</span>
-<span class="cstat-no" title="statement not covered" >    this.statusCode = statusCode</span>
-<span class="cstat-no" title="statement not covered" >    this.name = "ApiError"</span>
+  constructor(statusCode: number, message: string) {
+    super(message)
+    this.statusCode = statusCode
+    this.name = "ApiError"
   }
 }
 &nbsp;
-export class <span class="cstat-no" title="statement not covered" >ValidationError </span>extends ApiError {
-<span class="fstat-no" title="function not covered" >  constructor(m</span>essage: string) {
-<span class="cstat-no" title="statement not covered" >    super(400, message)</span>
-<span class="cstat-no" title="statement not covered" >    this.name = "ValidationError"</span>
+export class ValidationError extends ApiError {
+  constructor(message: string) {
+    super(400, message)
+    this.name = "ValidationError"
   }
 }
 &nbsp;
-export class <span class="cstat-no" title="statement not covered" >AuthenticationError </span>extends ApiError {
-<span class="fstat-no" title="function not covered" >  constructor(m</span>essage: string) {
-<span class="cstat-no" title="statement not covered" >    super(401, message)</span>
-<span class="cstat-no" title="statement not covered" >    this.name = "AuthenticationError"</span>
+export class AuthenticationError extends ApiError {
+  constructor(message: string) {
+    super(401, message)
+    this.name = "AuthenticationError"
   }
 }
 &nbsp;
-export class <span class="cstat-no" title="statement not covered" >DatabaseError </span>extends ApiError {
-<span class="fstat-no" title="function not covered" >  constructor(m</span>essage: string) {
-<span class="cstat-no" title="statement not covered" >    super(500, message)</span>
-<span class="cstat-no" title="statement not covered" >    this.name = "DatabaseError"</span>
+export class DatabaseError extends ApiError {
+  constructor(message: string) {
+    super(500, message)
+    this.name = "DatabaseError"
   }
 }
 &nbsp;
@@ -160,7 +160,7 @@ export class <span class="cstat-no" title="statement not covered" >DatabaseError
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T05:08:53.789Z
+                at 2025-11-11T05:39:09.412Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

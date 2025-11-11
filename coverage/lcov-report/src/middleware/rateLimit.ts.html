@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">20.83% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>5/24</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">25% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>1/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">20.83% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/24</span>
+                <span class='fraction'>5/24</span>
             </div>
         
             
@@ -123,31 +123,27 @@
 <a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,9 +152,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -180,10 +180,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { NextApiRequest, NextApiResponse } from "next"
 &nbsp;
 // Simple in-memory rate limiter for Next.js API routes
-const rateLimitMap = <span class="cstat-no" title="statement not covered" >new Map&lt;string, { count: number; resetTime: number }&gt;()</span>
+const rateLimitMap = new Map&lt;string, { count: number; resetTime: number }&gt;()
 &nbsp;
-const WINDOW_MS = <span class="cstat-no" title="statement not covered" >15 * 60 * 1000 /</span>/ 15 minutes
-const MAX_REQUESTS = <span class="cstat-no" title="statement not covered" >100 /</span>/ Limit each IP to 100 requests per window
+const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_REQUESTS = 100 // Limit each IP to 100 requests per window
 &nbsp;
 function <span class="fstat-no" title="function not covered" >getIP(r</span>eq: NextApiRequest): string {
 <span class="cstat-no" title="statement not covered" >  return (</span>
@@ -214,8 +214,8 @@ function <span class="fstat-no" title="function not covered" >checkRateLimit(i</
 }
 &nbsp;
 // Create a wrapper function to use the rate limiter with Next.js API routes
-export function <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >rateLimitMiddleware(h</span></span>andler: (req: NextApiRequest, res: NextApiResponse) =&gt; Promise&lt;void&gt;) {
-<span class="cstat-no" title="statement not covered" >  return <span class="fstat-no" title="function not covered" >async (r</span>eq: NextApiRequest, res: NextApiResponse) =&gt; {</span>
+export function rateLimitMiddleware(handler: (req: NextApiRequest, res: NextApiResponse) =&gt; Promise&lt;void&gt;) {
+  return <span class="fstat-no" title="function not covered" >async (r</span>eq: NextApiRequest, res: NextApiResponse) =&gt; {
     const ip = <span class="cstat-no" title="statement not covered" >getIP(req)</span>
     const { allowed, remaining, resetTime } = <span class="cstat-no" title="statement not covered" >checkRateLimit(ip)</span>
 &nbsp;
@@ -241,7 +241,7 @@ export function <span class="cstat-no" title="statement not covered" ><span clas
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T05:08:53.789Z
+                at 2025-11-11T05:39:09.412Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

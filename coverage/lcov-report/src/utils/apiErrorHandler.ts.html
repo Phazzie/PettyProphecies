@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">93.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>14/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">71.42% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>5/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">92.85% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>13/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -90,56 +90,56 @@
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
 <a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { toast } from <span class="cstat-no" title="statement not covered" >"sonner"</span>
-import { captureException } from <span class="cstat-no" title="statement not covered" >"./sentry"</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { toast } from "sonner"
+import { captureException } from "./sentry"
 &nbsp;
 export interface ApiError extends Error {
   status?: number
 }
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >handleApiError = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>e</span>rror: ApiError) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  console.error("API Error:", error)</span>
-<span class="cstat-no" title="statement not covered" >  captureException(error)</span>
+export const handleApiError = (error: ApiError) =&gt; {
+  console.error("API Error:", error)
+  captureException(error)
 &nbsp;
-  let message = <span class="cstat-no" title="statement not covered" >"An error occurred. The universe must really have it out for you."</span>
+  let message = "An error occurred. The universe must really have it out for you."
 &nbsp;
-  const status = <span class="cstat-no" title="statement not covered" >error.status || 500</span>
-<span class="cstat-no" title="statement not covered" >  if (status === 401) {</span>
+  const status = error.status || <span class="branch-1 cbranch-no" title="branch not covered" >500</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (status === 401) {
 <span class="cstat-no" title="statement not covered" >    message = "Unauthorized. Did you forget your own password? Typical."</span>
-  } else <span class="cstat-no" title="statement not covered" >if (status === 404) {</span>
-<span class="cstat-no" title="statement not covered" >    message = "Not found. It probably saw you coming and ran away."</span>
-  } else <span class="cstat-no" title="statement not covered" ><span class="missing-if-branch" title="if path not taken" >I</span>if (status &gt;= 500) {</span>
-<span class="cstat-no" title="statement not covered" >    message = "Server error. Even our servers are having a bad day because of you."</span>
+  } else if (status === 404) {
+    message = "Not found. It probably saw you coming and ran away."
+  } else if (status &gt;= 500) {
+    message = "Server error. Even our servers are having a bad day because of you."
   }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  toast.error(message, {</span>
+  toast.error(message, {
     duration: 5000,
   })
 }
@@ -151,7 +151,7 @@ export const <span class="cstat-no" title="statement not covered" >handleApiErro
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T05:08:53.789Z
+                at 2025-11-11T05:39:09.412Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

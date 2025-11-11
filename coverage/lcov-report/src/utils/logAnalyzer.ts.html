@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">82.35% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>14/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>2/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>2/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">81.25% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>13/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -100,32 +100,26 @@
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">19x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -135,27 +129,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import logger from <span class="cstat-no" title="statement not covered" >"./logger"</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import logger from "./logger"
 &nbsp;
-const ERROR_THRESHOLD = <span class="cstat-no" title="statement not covered" >5</span>
-const TIME_WINDOW = <span class="cstat-no" title="statement not covered" >60000 /</span>/ 1 minute
+const ERROR_THRESHOLD = 5
+const TIME_WINDOW = 60000 // 1 minute
 &nbsp;
 class LogAnalyzer {
-  private <span class="cstat-no" title="statement not covered" >errorCount = 0</span>
-  private <span class="cstat-no" title="statement not covered" >lastResetTime: number = Date.now()</span>
+  private errorCount = 0
+  private lastResetTime: number = Date.now()
 &nbsp;
-<span class="fstat-no" title="function not covered" >  analyzeLog(l</span>evel: string, message: string, meta: any) {
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (level === "error") {</span>
-<span class="cstat-no" title="statement not covered" >      this.errorCount++</span>
+  analyzeLog(level: string, message: string, meta: any) {
+    if (level === "error") {
+      this.errorCount++
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (Date.now() - this.lastResetTime &gt; TIME_WINDOW) {</span>
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (Date.now() - this.lastResetTime &gt; TIME_WINDOW) {
 <span class="cstat-no" title="statement not covered" >        this.resetErrorCount()</span>
       }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (this.errorCount &gt;= ERROR_THRESHOLD) {</span>
-<span class="cstat-no" title="statement not covered" >        this.triggerAlert(message, meta)</span>
+      if (this.errorCount &gt;= ERROR_THRESHOLD) {
+        this.triggerAlert(message, meta)
       }
     }
   }
@@ -165,14 +165,14 @@ class LogAnalyzer {
 <span class="cstat-no" title="statement not covered" >    this.lastResetTime = Date.now()</span>
   }
 &nbsp;
-  private <span class="fstat-no" title="function not covered" >triggerAlert(m</span>essage: string, meta: any) {
+  private triggerAlert(message: string, meta: any) {
     // In a real-world scenario, you might want to send an email, SMS, or integrate with a service like PagerDuty
-<span class="cstat-no" title="statement not covered" >    logger.warn("ALERT: High error rate detected", { message, meta })</span>
-<span class="cstat-no" title="statement not covered" >    console.error("ALERT: High error rate detected", { message, meta })</span>
+    logger.warn("ALERT: High error rate detected", { message, meta })
+    console.error("ALERT: High error rate detected", { message, meta })
   }
 }
 &nbsp;
-export const <span class="cstat-no" title="statement not covered" >logAnalyzer = <span class="cstat-no" title="statement not covered" >n</span>ew LogAnalyzer()</span>
+export const logAnalyzer = new LogAnalyzer()
 &nbsp;
 &nbsp;</pre></td></tr></table></pre>
 
@@ -181,7 +181,7 @@ export const <span class="cstat-no" title="statement not covered" >logAnalyzer =
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T05:08:53.789Z
+                at 2025-11-11T05:39:09.412Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
