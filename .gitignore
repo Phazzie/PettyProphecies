@@ -29,4 +29,5 @@ sentry.properties
 
 # typescript
 *.tsbuildinfo
+next-env.d.tscoverage/
 next-env.d.ts
