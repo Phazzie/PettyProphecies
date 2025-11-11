@@ -230,6 +230,7 @@ export type APIErrorCode =
   | "RATE_LIMIT_EXCEEDED"
   | "INTERNAL_ERROR"
   | "CSRF_ERROR"
+  | "DATABASE_ERROR"
 
 // ============================================================================
 // Domain Models (referenced by repositories)
@@ -247,15 +248,11 @@ export interface IUser {
 export interface IReading {
   _id: string
   userId: string
-  spreadType: string
-  cards: {
-    name: string
-    suit: string
-    value: string
-    isReversed: boolean
-  }[]
+  spreadName: string
+  cards: string[]
   interpretation: string
   rating?: number
+  aiGenerated?: boolean
   createdAt: Date
 }
 
@@ -332,5 +329,12 @@ export class CSRFError extends Error {
   constructor(message: string = "Invalid CSRF token") {
     super(message)
     this.name = "CSRFError"
+  }
+}
+
+export class DatabaseError extends Error {
+  constructor(message: string = "Database operation failed") {
+    super(message)
+    this.name = "DatabaseError"
   }
 }

@@ -31,6 +31,7 @@ export const useApiRequest = <T>() => {
           ...headers,
         },
         body: body ? JSON.stringify(body) : undefined,
+        credentials: 'include', // Include cookies for authentication
       });
 
       if (!response.ok) {

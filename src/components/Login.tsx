@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "@/lib/AuthContext"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword } from "../utils/validation"
@@ -21,7 +21,10 @@ export const Login: React.FC = () => {
     { email: "", password: "" },
     { email: validateEmail, password: validatePassword },
   )
-  const { request, loading } = useApiRequest<{ token: string }>()
+  const { request, loading } = useApiRequest<{
+    success: boolean
+    data: { message: string; user: { id: string; username: string; email: string } }
+  }>()
   const [success, setSuccess] = useState(false)
 
   // const errorRef = useFocusError(Object.values(errors).find(Boolean) || null)
@@ -39,10 +42,13 @@ export const Login: React.FC = () => {
           url: "/api/auth/login",
           method: "POST",
           body: values,
-          onSuccess: (data: { token: string }) => {
-            login(data.token)
-            toast.success(getPassiveAggressiveMessage("login"))
-            setSuccess(true)
+          onSuccess: (response) => {
+            if (response.success && response.data.user) {
+              // Auth is now handled by httpOnly cookies, no localStorage needed
+              login(response.data.user)
+              toast.success(getPassiveAggressiveMessage("login"))
+              setSuccess(true)
+            }
           },
         })
       } catch (err) {

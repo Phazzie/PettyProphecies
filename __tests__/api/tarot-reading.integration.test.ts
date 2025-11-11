@@ -29,6 +29,29 @@ jest.mock("@/src/models/Reading", () => {
   }
 })
 
+// Create mock functions that can be spied on
+const mockCreate = jest.fn().mockResolvedValue({
+  _id: "reading-456",
+  userId: "user-123",
+})
+const mockFindOne = jest.fn().mockResolvedValue({
+  _id: "reading-456",
+  userId: "user-123",
+})
+const mockRateReading = jest.fn().mockResolvedValue({
+  _id: "reading-456",
+  userId: "user-123",
+  rating: 5,
+})
+
+jest.mock("@/src/repositories/ReadingRepository", () => ({
+  ReadingRepository: jest.fn().mockImplementation(() => ({
+    create: mockCreate,
+    findOne: mockFindOne,
+    rateReading: mockRateReading,
+  })),
+}))
+
 jest.mock("@/src/utils/database", () => ({
   connectToDatabase: jest.fn().mockResolvedValue({}),
 }))
@@ -47,6 +70,11 @@ jest.mock("@/src/utils/logger", () => ({
 // Mock middleware to pass through
 jest.mock("@/src/middleware/auth", () => ({
   authMiddleware: (handler: any) => handler,
+}))
+
+jest.mock("@/src/middleware/auth.v2", () => ({
+  withAuth: (handler: any) => handler,
+  getAuthService: jest.fn(),
 }))
 
 jest.mock("@/src/middleware/errorHandler", () => ({
@@ -83,11 +111,19 @@ describe("Tarot Reading API Integration", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    // Set up default mock for save
-    const mockInstance = new Reading({}) as any
-    mockInstance.save = jest.fn().mockResolvedValue({
+    // Reset mock implementations
+    mockCreate.mockResolvedValue({
       _id: mockReadingId,
       userId: mockUserId,
+    })
+    mockFindOne.mockResolvedValue({
+      _id: mockReadingId,
+      userId: mockUserId,
+    })
+    mockRateReading.mockResolvedValue({
+      _id: mockReadingId,
+      userId: mockUserId,
+      rating: 5,
     })
   })
 
@@ -121,9 +157,10 @@ describe("Tarot Reading API Integration", () => {
       expect(res._getStatusCode()).toBe(200)
 
       const response = JSON.parse(res._getData())
-      expect(response.interpretation).toBe(mockAIInterpretation)
-      expect(response.aiGenerated).toBe(true)
-      expect(response.modelInfo).toBeDefined()
+      expect(response.success).toBe(true)
+      expect(response.data.interpretation).toBe(mockAIInterpretation)
+      expect(response.data.aiGenerated).toBe(true)
+      expect(response.data.modelInfo).toBeDefined()
     })
 
     it("should NOT call generateAIReading when useAI=false", async () => {
@@ -147,8 +184,9 @@ describe("Tarot Reading API Integration", () => {
       expect(res._getStatusCode()).toBe(200)
 
       const response = JSON.parse(res._getData())
-      expect(response.aiGenerated).toBe(false)
-      expect(response.modelInfo).toBeUndefined()
+      expect(response.success).toBe(true)
+      expect(response.data.aiGenerated).toBe(false)
+      expect(response.data.modelInfo).toBeUndefined()
     })
 
     it("should use template when AI is unavailable even if useAI=true", async () => {
@@ -173,7 +211,8 @@ describe("Tarot Reading API Integration", () => {
       expect(res._getStatusCode()).toBe(200)
 
       const response = JSON.parse(res._getData())
-      expect(response.aiGenerated).toBe(false)
+      expect(response.success).toBe(true)
+      expect(response.data.aiGenerated).toBe(false)
     })
 
     it("should fallback to template when AI generation throws error", async () => {
@@ -198,8 +237,9 @@ describe("Tarot Reading API Integration", () => {
       expect(res._getStatusCode()).toBe(200)
 
       const response = JSON.parse(res._getData())
-      expect(response.interpretation).toBeTruthy()
-      expect(response.aiGenerated).toBe(false)
+      expect(response.success).toBe(true)
+      expect(response.data.interpretation).toBeTruthy()
+      expect(response.data.aiGenerated).toBe(false)
     })
 
     it("should save reading with aiGenerated=true when AI is used", async () => {
@@ -225,7 +265,7 @@ describe("Tarot Reading API Integration", () => {
       await handler(req, res)
 
       // Assert
-      expect(Reading).toHaveBeenCalledWith(
+      expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           aiGenerated: true,
         })
@@ -249,7 +289,7 @@ describe("Tarot Reading API Integration", () => {
       await handler(req, res)
 
       // Assert
-      expect(Reading).toHaveBeenCalledWith(
+      expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           aiGenerated: false,
         })
@@ -280,12 +320,11 @@ describe("Tarot Reading API Integration", () => {
     it("should update reading rating successfully", async () => {
       // Arrange
       const rating = 5
-      const mockFindOneAndUpdate = jest.fn().mockResolvedValue({
+      mockRateReading.mockResolvedValue({
         _id: mockReadingId,
         userId: mockUserId,
         rating,
       })
-      ;(Reading as any).findOneAndUpdate = mockFindOneAndUpdate
 
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: "PUT",
@@ -302,12 +341,13 @@ describe("Tarot Reading API Integration", () => {
       // Assert
       expect(res._getStatusCode()).toBe(200)
       const response = JSON.parse(res._getData())
-      expect(response.message).toContain("Rating updated successfully")
-      expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
-        { _id: mockReadingId, userId: mockUserId },
-        { rating },
-        { new: true }
-      )
+      expect(response.success).toBe(true)
+      expect(response.data.message).toContain("Rating updated successfully")
+      expect(mockFindOne).toHaveBeenCalledWith({
+        _id: mockReadingId,
+        userId: mockUserId
+      })
+      expect(mockRateReading).toHaveBeenCalledWith(mockReadingId, rating)
     })
 
     it("should reject invalid rating values", async () => {
@@ -343,7 +383,8 @@ describe("Tarot Reading API Integration", () => {
       // Assert
       expect(res._getStatusCode()).toBe(405)
       const response = JSON.parse(res._getData())
-      expect(response.message).toBe("Method not allowed")
+      expect(response.success).toBe(false)
+      expect(response.error.message).toBe("Method not allowed")
     })
   })
 })

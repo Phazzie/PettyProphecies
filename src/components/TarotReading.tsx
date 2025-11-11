@@ -63,9 +63,6 @@ export const TarotReading: React.FC = () => {
             spreadName: values.spread,
             useAI,
           },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
         })
         setReading(data)
         toast.info(getPassiveAggressiveMessage("reading"))
@@ -86,9 +83,6 @@ export const TarotReading: React.FC = () => {
       await request({
         url: "/api/tarot-reading",
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: { readingId: reading.readingId, rating: value },
       })
       setRating(value)

@@ -17,6 +17,7 @@ import {
   ConflictError,
   RateLimitError,
   CSRFError,
+  DatabaseError,
 } from "../interfaces/seams"
 
 /**
@@ -30,6 +31,7 @@ function getStatusCode(error: Error): number {
   if (error instanceof NotFoundError) return 404
   if (error instanceof ConflictError) return 409
   if (error instanceof RateLimitError) return 429
+  if (error instanceof DatabaseError) return 500
   return 500
 }
 
@@ -44,6 +46,7 @@ function getErrorCode(error: Error): APIErrorCode {
   if (error instanceof ConflictError) return "CONFLICT"
   if (error instanceof RateLimitError) return "RATE_LIMIT_EXCEEDED"
   if (error instanceof CSRFError) return "CSRF_ERROR"
+  if (error instanceof DatabaseError) return "DATABASE_ERROR"
   return "INTERNAL_ERROR"
 }
 

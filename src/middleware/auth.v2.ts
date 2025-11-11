@@ -175,3 +175,50 @@ export function getAuthService(): AuthService {
   }
   return authServiceInstance
 }
+
+/**
+ * Higher-order function to wrap API handlers with authentication
+ * Automatically extracts userId from cookie and adds to req.userId
+ * Rejects unauthenticated requests with 401 error
+ *
+ * @param handler - API handler function that requires authentication
+ * @returns Wrapped handler with authentication check
+ *
+ * @example
+ * ```typescript
+ * async function handler(req: NextApiRequest, res: NextApiResponse) {
+ *   const userId = req.userId // Available after withAuth wrapping
+ *   // ... handler logic
+ * }
+ *
+ * export default withAuth(handler)
+ * ```
+ */
+export function withAuth(
+  handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>
+) {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    try {
+      const authService = getAuthService()
+      const userId = await authService.requireAuth(req)
+
+      // Attach userId to request for handler to use
+      ;(req as any).userId = userId
+
+      await handler(req, res)
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: "AUTHENTICATION_ERROR",
+            message: error.message,
+          },
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        throw error
+      }
+    }
+  }
+}

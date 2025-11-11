@@ -27,9 +27,7 @@ export const UserDashboard: React.FC = () => {
     setError("")
     try {
       const response = await fetch(`/api/user/readings?page=${page}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
       })
 
       if (response.ok) {

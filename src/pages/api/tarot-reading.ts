@@ -1,24 +1,26 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { authMiddleware } from "../../middleware/auth"
+import { withAuth } from "../../middleware/auth.v2"
 import { errorHandler } from "../../middleware/errorHandler"
 import { requestLogger } from "../../middleware/requestLogger"
 import { rateLimitMiddleware } from "../../middleware/rateLimit"
 import { getSpreadByName } from "../../data/tarotSpreads"
 import { connectToDatabase } from "../../utils/database"
-import { Reading } from "../../models/Reading"
+import { ReadingRepository } from "../../repositories/ReadingRepository"
 import logger from "../../utils/logger"
-import { ValidationError, DatabaseError } from "../../types/errors"
+import { ValidationError, DatabaseError } from "../../interfaces/seams"
 import { generateAIReading, isAIAvailable, getAIModelInfo } from "../../services/aiTarot"
+import { sendSuccess, sendError } from "../../utils/apiResponse"
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
+  const readingRepository = new ReadingRepository()
 
   if (req.method === "POST") {
     const { spreadName, useAI } = req.body
     const spread = getSpreadByName(spreadName)
 
     if (!spread) {
-      throw new ValidationError("Invalid spread name")
+      throw new ValidationError("Invalid spread name", "spreadName")
     }
 
     const reading = spread.getReading()
@@ -56,14 +58,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-      const newReading = new Reading({
+      const newReading = await readingRepository.create({
         userId: req.userId,
         spreadName,
         cards: reading.map((card) => card.name),
         interpretation,
         aiGenerated,
       })
-      await newReading.save()
 
       logger.info("New reading created", {
         userId: req.userId,
@@ -73,7 +74,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
       const modelInfo = aiGenerated ? getAIModelInfo() : undefined
 
-      res.status(200).json({
+      return sendSuccess(res, {
         reading,
         interpretation,
         readingId: newReading._id,
@@ -87,23 +88,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { readingId, rating } = req.body
 
     if (!readingId || typeof rating !== "number" || rating < 1 || rating > 5) {
-      throw new ValidationError("Invalid rating data")
+      throw new ValidationError("Invalid rating data", "rating")
     }
 
     try {
-      const updatedReading = await Reading.findOneAndUpdate(
-        { _id: readingId, userId: req.userId },
-        { rating },
-        { new: true },
-      )
+      // First verify the reading belongs to the user
+      const existingReading = await readingRepository.findOne({
+        _id: readingId,
+        userId: req.userId
+      })
+
+      if (!existingReading) {
+        throw new ValidationError("Reading not found", "readingId")
+      }
+
+      const updatedReading = await readingRepository.rateReading(readingId, rating)
 
       if (!updatedReading) {
-        throw new ValidationError("Reading not found")
+        throw new DatabaseError("Failed to update rating")
       }
 
       logger.info("Reading rated", { userId: req.userId, readingId, rating })
 
-      res.status(200).json({ message: "Rating updated successfully", reading: updatedReading })
+      return sendSuccess(res, {
+        message: "Rating updated successfully",
+        reading: updatedReading
+      })
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
@@ -111,9 +121,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       throw new DatabaseError("Failed to update rating")
     }
   } else {
-    res.status(405).json({ message: "Method not allowed" })
+    return sendError(res, new ValidationError("Method not allowed", "method"), 405)
   }
 }
 
-export default rateLimitMiddleware(authMiddleware(requestLogger(errorHandler(handler))))
+export default rateLimitMiddleware(withAuth(requestLogger(errorHandler(handler))))
 

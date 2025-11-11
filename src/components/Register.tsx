@@ -7,12 +7,29 @@ import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
+import { useAuth } from "../../lib/AuthContext"
+
+// V2 API response structure
+interface RegisterResponse {
+  success: boolean
+  data: {
+    message: string
+    user: {
+      id: string
+      username: string
+      email: string
+    }
+  }
+}
 
 /**
  * Register component for user registration
  * @returns {JSX.Element} The Register form
  */
 export const Register: React.FC = () => {
+  // Auth context (v2 cookie-based)
+  const { login } = useAuth()
+
   // Form validation hook
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { username: "", email: "", password: "", confirmPassword: "" },
@@ -24,8 +41,8 @@ export const Register: React.FC = () => {
     },
   )
 
-  // API request hook
-  const { request, loading } = useApiRequest<{ message: string }>()
+  // API request hook with v2 response type
+  const { request, loading } = useApiRequest<RegisterResponse>()
 
   /**
    * Handles form submission
@@ -43,8 +60,12 @@ export const Register: React.FC = () => {
             email: values.email,
             password: values.password,
           },
-          onSuccess: () => {
-            toast.success(getPassiveAggressiveMessage("register"))
+          onSuccess: (response) => {
+            // V2: Response contains user data, auth is handled by httpOnly cookies
+            if (response.success && response.data.user) {
+              login(response.data.user)
+              toast.success(getPassiveAggressiveMessage("register"))
+            }
           },
         })
       } catch (err) {
