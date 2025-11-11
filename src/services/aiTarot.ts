@@ -1,6 +1,7 @@
 import OpenAI from "openai"
 import type { TarotCard } from "@/src/data/tarotCards"
 import type { TarotSpread } from "@/src/data/tarotSpreads"
+import logger from "../utils/logger"
 
 /**
  * AI-Powered Tarot Reading Service
@@ -34,7 +35,7 @@ export async function generateAIReading(options: AIReadingOptions): Promise<stri
 
   // Fallback to template if AI not available
   if (!xai) {
-    console.warn("xAI not configured, using template reading")
+    logger.warn("xAI not configured, using template reading")
     return spread.interpret(cards)
   }
 
@@ -101,7 +102,7 @@ Write the reading now. Be snarky, be insightful, be memorable.`
 
     return text
   } catch (error) {
-    console.error("AI reading generation failed:", error)
+    logger.error({ error }, "AI reading generation failed")
     // Fallback to template reading
     return spread.interpret(cards)
   }

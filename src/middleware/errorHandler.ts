@@ -8,13 +8,13 @@ export function errorHandler(handler: (req: NextApiRequest, res: NextApiResponse
       await handler(req, res)
     } catch (error: unknown) {
       if (error instanceof ApiError) {
-        logger.error("API Error:", {
+        logger.error({
           url: req.url,
           method: req.method,
           name: error.name,
           message: error.message,
           statusCode: error.statusCode,
-        })
+        }, "API Error")
 
         res.status(error.statusCode).json({
           error: {
@@ -23,11 +23,11 @@ export function errorHandler(handler: (req: NextApiRequest, res: NextApiResponse
           },
         })
       } else {
-        logger.error("Unexpected Error:", {
+        logger.error({
           url: req.url,
           method: req.method,
           error: error instanceof Error ? error.message : String(error),
-        })
+        }, "Unexpected Error")
 
         res.status(500).json({
           error: {

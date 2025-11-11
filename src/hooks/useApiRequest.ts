@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react"
 import { ApiError, handleApiError } from "../utils/apiErrorHandler"
+import { useCSRFToken } from "./useCSRFToken"
 
 interface ApiRequestOptions<T> {
   url: string
@@ -12,6 +13,7 @@ interface ApiRequestOptions<T> {
 export const useApiRequest = <T>() => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const { csrfToken } = useCSRFToken();
 
   const request = useCallback(async ({
     url,
@@ -28,6 +30,7 @@ export const useApiRequest = <T>() => {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
           ...headers,
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -59,7 +62,7 @@ export const useApiRequest = <T>() => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [csrfToken]);
 
   return { request, loading, error };
 };

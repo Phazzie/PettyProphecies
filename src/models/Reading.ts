@@ -20,5 +20,10 @@ const readingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 })
 
+// Indexes for optimized queries
+readingSchema.index({ userId: 1, createdAt: -1 })  // Compound index for user's reading history
+readingSchema.index({ createdAt: 1 })  // Index for recent readings queries
+readingSchema.index({ rating: 1 })  // Index for rating queries and analytics
+
 export const Reading = mongoose.model<IReading>("Reading", readingSchema)
 

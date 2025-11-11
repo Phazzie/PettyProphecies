@@ -13,10 +13,24 @@
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { errorHandler } from "../../../middleware/errorHandler"
-import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError } from "../../../types/errors"
+import { getRateLimiter, setRateLimitHeaders, RateLimitError } from '@/src/middleware/rateLimit.v2'
 import type { IUserRepository, IPasswordResetRepository, IEmailService } from "../../../interfaces/seams"
+import { getCSRFService } from "../../../middleware/csrf"
 import logger from "../../../utils/logger"
+
+const rateLimiter = getRateLimiter()
+
+/**
+ * Get identifier for rate limiting (IP address)
+ */
+function getIdentifier(req: NextApiRequest): string {
+  return (
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    req.socket.remoteAddress ||
+    'unknown'
+  )
+}
 
 /**
  * Validates email format
@@ -48,6 +62,22 @@ export async function forgotPasswordHandler(
     })
   }
 
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
+  // Validate CSRF token
+  const csrfService = getCSRFService()
+  await csrfService.validateToken(req)
+
   const { email } = req.body
 
   // Validate email presence and format
@@ -70,7 +100,7 @@ export async function forgotPasswordHandler(
 
     if (!user) {
       // User doesn't exist, but return success to prevent email enumeration
-      logger.info("Password reset requested for non-existent email", { email })
+      logger.info({ email }, "Password reset requested for non-existent email")
       return res.status(200).json(standardResponse)
     }
 
@@ -80,29 +110,29 @@ export async function forgotPasswordHandler(
     // Send reset email
     try {
       await emailService.sendPasswordReset(email, token, user.username)
-      logger.info("Password reset email sent", {
+      logger.info({
         userId: user._id,
         email,
         expiresAt
-      })
+      }, "Password reset email sent")
     } catch (emailError) {
       // Log email error but still return success
       // We don't want to reveal if email was actually sent
-      logger.error("Failed to send password reset email", {
+      logger.error({
         userId: user._id,
         email,
         error: emailError instanceof Error ? emailError.message : String(emailError),
-      })
+      }, "Failed to send password reset email")
     }
 
     // Always return success
     return res.status(200).json(standardResponse)
   } catch (error) {
     // Log error and re-throw for error handler middleware
-    logger.error("Error in forgot password handler", {
+    logger.error({
       email,
       error: error instanceof Error ? error.message : String(error),
-    })
+    }, "Error in forgot password handler")
     throw error
   }
 }
@@ -125,4 +155,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void>
 }
 
 // Export with middleware wrappers
-export default rateLimitMiddleware(errorHandler(handler))
+export default errorHandler(handler)

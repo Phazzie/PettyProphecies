@@ -78,6 +78,12 @@ passwordResetSchema.index({ userId: 1, expiresAt: 1 })
 passwordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
 /**
+ * Index for creation timestamp queries
+ * Useful for auditing and cleanup operations
+ */
+passwordResetSchema.index({ createdAt: 1 })
+
+/**
  * Export the PasswordReset model
  * Use existing model if already compiled (prevents recompilation errors)
  */

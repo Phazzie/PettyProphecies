@@ -29,6 +29,7 @@ import {
   CSRFError,
 } from "../interfaces/seams"
 import logger from "../utils/logger"
+import * as Sentry from "@sentry/nextjs"
 
 /**
  * Maps error instances to HTTP status codes
@@ -107,54 +108,95 @@ function createAPIError(error: Error): APIError {
 }
 
 /**
+ * Captures error to Sentry with context
+ */
+function captureToSentry(
+  error: Error,
+  req: NextApiRequest
+): void {
+  const errorCode = getErrorCode(error)
+
+  // Don't send expected user errors to Sentry
+  if (
+    errorCode === "VALIDATION_ERROR" ||
+    errorCode === "AUTHENTICATION_ERROR" ||
+    errorCode === "CSRF_ERROR" ||
+    errorCode === "RATE_LIMIT_EXCEEDED"
+  ) {
+    return
+  }
+
+  // Capture to Sentry with context
+  Sentry.captureException(error, {
+    tags: {
+      endpoint: req.url || "unknown",
+      method: req.method || "unknown",
+      errorCode,
+    },
+    user: {
+      id: (req as any).userId || "anonymous",
+    },
+    extra: {
+      body: req.body,
+      query: req.query,
+    },
+  })
+}
+
+/**
  * Logs error based on type and severity
  */
-function logError(error: Error): void {
+function logError(error: Error, req?: NextApiRequest): void {
   const errorCode = getErrorCode(error)
 
   // Log validation and authentication errors at warn level (expected user errors)
   if (errorCode === "VALIDATION_ERROR") {
-    logger.warn("Validation error", {
+    logger.warn({
       error: error.message,
       field: error instanceof ValidationError ? error.field : undefined,
-    })
+    }, "Validation error")
     return
   }
 
   if (errorCode === "AUTHENTICATION_ERROR") {
-    logger.warn("Authentication error", {
+    logger.warn({
       error: error.message,
-    })
+    }, "Authentication error")
     return
   }
 
   if (errorCode === "AUTHORIZATION_ERROR") {
-    logger.warn("Authorization error", {
+    logger.warn({
       error: error.message,
-    })
+    }, "Authorization error")
     return
   }
 
   if (errorCode === "CSRF_ERROR") {
-    logger.warn("CSRF error", {
+    logger.warn({
       error: error.message,
-    })
+    }, "CSRF error")
     return
   }
 
   if (errorCode === "RATE_LIMIT_EXCEEDED") {
-    logger.warn("Rate limit exceeded", {
+    logger.warn({
       error: error.message,
-    })
+    }, "Rate limit exceeded")
     return
   }
 
   // Log all other errors (including NOT_FOUND, CONFLICT, INTERNAL_ERROR) at error level
-  logger.error("Unhandled error", {
+  logger.error({
     error: error.message,
     stack: error.stack,
     name: error.name,
-  })
+  }, "Unhandled error")
+
+  // Capture to Sentry if request context is available
+  if (req) {
+    captureToSentry(error, req)
+  }
 }
 
 /**
@@ -211,12 +253,12 @@ export const errorHandler: MiddlewareWrapper = (handler: NextApiHandler) => {
     } catch (error) {
       // Handle all error types
       if (error instanceof Error) {
-        logError(error)
+        logError(error, req)
         sendErrorResponse(res, error)
       } else {
         // Handle non-Error objects (rare case)
         const genericError = new Error("Internal server error")
-        logError(genericError)
+        logError(genericError, req)
         sendErrorResponse(res, genericError)
       }
     }

@@ -63,13 +63,26 @@ export interface IRateLimiter {
   checkLimit(identifier: string, action: RateLimitAction): Promise<RateLimitResult>
 }
 
-export type RateLimitAction = "auth" | "general" | "reading" | "api"
+export type RateLimitAction =
+  | "auth:login"
+  | "auth:register"
+  | "auth:password-reset"
+  | "auth:verify"
+  | "auth:logout"
+  | "tarot:reading"
+  | "api:general"
+  // Legacy actions (for backward compatibility)
+  | "auth"
+  | "general"
+  | "reading"
+  | "api"
 
 export interface RateLimitResult {
   allowed: boolean
   limit: number
   remaining: number
   resetAt: Date
+  retryAfter?: number // Seconds until the user can retry
 }
 
 // ============================================================================
@@ -318,7 +331,8 @@ export class ConflictError extends Error {
 export class RateLimitError extends Error {
   constructor(
     message: string = "Too many requests",
-    public resetAt?: Date
+    public retryAfter?: number, // Seconds until retry
+    public resetAt?: Date // When the rate limit resets
   ) {
     super(message)
     this.name = "RateLimitError"

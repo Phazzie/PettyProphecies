@@ -13,10 +13,24 @@
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { errorHandler } from "../../../middleware/errorHandler"
-import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError } from "../../../types/errors"
+import { getRateLimiter, setRateLimitHeaders, RateLimitError } from '@/src/middleware/rateLimit.v2'
 import type { IUserRepository, IPasswordResetRepository } from "../../../interfaces/seams"
+import { getCSRFService } from "../../../middleware/csrf"
 import logger from "../../../utils/logger"
+
+const rateLimiter = getRateLimiter()
+
+/**
+ * Get identifier for rate limiting (IP address)
+ */
+function getIdentifier(req: NextApiRequest): string {
+  return (
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    req.socket.remoteAddress ||
+    'unknown'
+  )
+}
 
 /**
  * Validates password strength
@@ -48,6 +62,22 @@ export async function resetPasswordHandler(
       },
     })
   }
+
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
+  // Validate CSRF token
+  const csrfService = getCSRFService()
+  await csrfService.validateToken(req)
 
   const { token, password } = req.body
 
@@ -87,18 +117,18 @@ export async function resetPasswordHandler(
     // Invalidate all reset tokens for this user (prevent reuse)
     await passwordResetRepository.invalidateUserTokens(resetRequest.userId)
 
-    logger.info("Password reset successful", {
+    logger.info({
       userId: resetRequest.userId,
-    })
+    }, "Password reset successful")
 
     return res.status(200).json({
       message: "Password reset successful. You can now login with your new password.",
     })
   } catch (error) {
     // Log error and re-throw for error handler middleware
-    logger.error("Error in reset password handler", {
+    logger.error({
       error: error instanceof Error ? error.message : String(error),
-    })
+    }, "Error in reset password handler")
     throw error
   }
 }
@@ -118,5 +148,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void>
   return resetPasswordHandler(req, res, userRepository, passwordResetRepository)
 }
 
-// Export with middleware wrappers
-export default rateLimitMiddleware(errorHandler(handler))
+// Export with error handler middleware
+export default errorHandler(handler)

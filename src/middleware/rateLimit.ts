@@ -1,3 +1,14 @@
+/**
+ * @deprecated This file is DEPRECATED. Use rateLimit.v2.ts instead.
+ *
+ * Migration Guide:
+ * - Import from '@/src/middleware/rateLimit.v2' instead
+ * - Use getRateLimiter(), setRateLimitHeaders(), and RateLimitError
+ * - See docs/REDIS_SETUP.md for migration instructions
+ *
+ * This file remains for backward compatibility only and will be removed in a future version.
+ */
+
 import type { NextApiRequest, NextApiResponse } from "next"
 
 // Simple in-memory rate limiter for Next.js API routes

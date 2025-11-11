@@ -14,6 +14,10 @@ import type {
   RateLimitAction,
   RateLimitResult,
 } from "@/src/interfaces/seams"
+import logger from "../utils/logger"
+
+// Re-export RateLimitError for convenience
+export { RateLimitError } from "@/src/interfaces/seams"
 
 /**
  * In-memory rate limiter for fallback/dev mode
@@ -83,6 +87,36 @@ class InMemoryRateLimiter {
  * Rate limit configuration for different actions
  */
 const RATE_LIMITS: Record<RateLimitAction, { limit: number; windowMs: number }> = {
+  // Granular auth actions
+  "auth:login": {
+    limit: 5,
+    windowMs: 15 * 60 * 1000, // 5 per 15 minutes
+  },
+  "auth:register": {
+    limit: 3,
+    windowMs: 60 * 60 * 1000, // 3 per hour
+  },
+  "auth:password-reset": {
+    limit: 3,
+    windowMs: 60 * 60 * 1000, // 3 per hour
+  },
+  "auth:verify": {
+    limit: 60,
+    windowMs: 60 * 1000, // 60 per minute (frequent checks)
+  },
+  "auth:logout": {
+    limit: 10,
+    windowMs: 60 * 1000, // 10 per minute
+  },
+  "tarot:reading": {
+    limit: 10,
+    windowMs: 60 * 1000, // 10 per minute
+  },
+  "api:general": {
+    limit: 100,
+    windowMs: 60 * 1000, // 100 per minute
+  },
+  // Legacy actions (for backward compatibility)
   auth: {
     limit: 10,
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -97,7 +131,7 @@ const RATE_LIMITS: Record<RateLimitAction, { limit: number; windowMs: number }> 
   },
   api: {
     limit: 50,
-    windowMs: 15 * 60 * 1000, // 15 minutes (same as general)
+    windowMs: 15 * 60 * 1000, // 15 minutes
   },
 }
 
@@ -123,14 +157,14 @@ export class RateLimiterService implements IRateLimiter {
         // Dynamic import to avoid errors when packages are not installed
         this.initializeRedisRateLimiter(redisUrl, redisToken)
       } else {
-        console.warn(
+        logger.warn(
           "Upstash Redis credentials not found. Using in-memory rate limiter."
         )
       }
     } catch (error) {
-      console.warn(
-        "Failed to initialize Redis rate limiter. Using in-memory fallback.",
-        error
+      logger.warn(
+        { error },
+        "Failed to initialize Redis rate limiter. Using in-memory fallback."
       )
     }
   }
@@ -155,49 +189,25 @@ export class RateLimiterService implements IRateLimiter {
       })
 
       // Create rate limiters for each action
-      this.redisRateLimiter = {
-        auth: new Ratelimit({
+      this.redisRateLimiter = {} as Record<RateLimitAction, any>
+
+      // Initialize rate limiters for all actions
+      for (const [action, config] of Object.entries(RATE_LIMITS)) {
+        this.redisRateLimiter[action as RateLimitAction] = new Ratelimit({
           redis,
           limiter: Ratelimit.slidingWindow(
-            RATE_LIMITS.auth.limit,
-            `${RATE_LIMITS.auth.windowMs / 1000} s`
+            config.limit,
+            `${config.windowMs / 1000} s`
           ),
           analytics: true,
-          prefix: "ratelimit:auth",
-        }),
-        general: new Ratelimit({
-          redis,
-          limiter: Ratelimit.slidingWindow(
-            RATE_LIMITS.general.limit,
-            `${RATE_LIMITS.general.windowMs / 1000} s`
-          ),
-          analytics: true,
-          prefix: "ratelimit:general",
-        }),
-        reading: new Ratelimit({
-          redis,
-          limiter: Ratelimit.slidingWindow(
-            RATE_LIMITS.reading.limit,
-            `${RATE_LIMITS.reading.windowMs / 1000} s`
-          ),
-          analytics: true,
-          prefix: "ratelimit:reading",
-        }),
-        api: new Ratelimit({
-          redis,
-          limiter: Ratelimit.slidingWindow(
-            RATE_LIMITS.api.limit,
-            `${RATE_LIMITS.api.windowMs / 1000} s`
-          ),
-          analytics: true,
-          prefix: "ratelimit:api",
-        }),
+          prefix: `ratelimit:${action}`,
+        })
       }
 
       this.useRedis = true
-      console.log("Redis rate limiter initialized successfully")
+      logger.info("Redis rate limiter initialized successfully")
     } catch (error) {
-      console.warn("Failed to initialize Redis rate limiter:", error)
+      logger.warn({ error }, "Failed to initialize Redis rate limiter")
       this.useRedis = false
     }
   }
@@ -220,24 +230,36 @@ export class RateLimiterService implements IRateLimiter {
         const limiter = this.redisRateLimiter[action]
         const result = await limiter.limit(identifier)
 
+        const resetAt = new Date(result.reset)
+        const retryAfter = result.success ? undefined : Math.ceil((resetAt.getTime() - Date.now()) / 1000)
+
         return {
           allowed: result.success,
           limit: result.limit,
           remaining: result.remaining,
-          resetAt: new Date(result.reset),
+          resetAt,
+          retryAfter,
         }
       } catch (error) {
-        console.error("Redis rate limiter error, falling back to in-memory:", error)
+        logger.error({ error }, "Redis rate limiter error, falling back to in-memory")
         // Fall through to in-memory limiter
       }
     }
 
     // Use in-memory rate limiter as fallback
-    return this.inMemoryLimiter.checkLimit(
+    const result = this.inMemoryLimiter.checkLimit(
       `${action}:${identifier}`,
       config.limit,
       config.windowMs
     )
+
+    // Add retryAfter for in-memory results
+    const retryAfter = result.allowed ? undefined : Math.ceil((result.resetAt.getTime() - Date.now()) / 1000)
+
+    return {
+      ...result,
+      retryAfter,
+    }
   }
 }
 
@@ -255,4 +277,22 @@ export function getRateLimiter(): RateLimiterService {
     rateLimiterInstance = new RateLimiterService()
   }
   return rateLimiterInstance
+}
+
+/**
+ * Set rate limit headers on response
+ * @param res NextApiResponse to set headers on
+ * @param result Rate limit result
+ */
+export function setRateLimitHeaders(
+  res: any,
+  result: RateLimitResult
+): void {
+  res.setHeader("X-RateLimit-Limit", result.limit.toString())
+  res.setHeader("X-RateLimit-Remaining", result.remaining.toString())
+  res.setHeader("X-RateLimit-Reset", result.resetAt.toISOString())
+
+  if (!result.allowed && result.retryAfter) {
+    res.setHeader("Retry-After", result.retryAfter.toString())
+  }
 }

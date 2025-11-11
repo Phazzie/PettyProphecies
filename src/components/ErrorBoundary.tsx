@@ -1,8 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
+import * as Sentry from "@sentry/nextjs"
 import ErrorPage from "./ErrorPage"
 
 interface Props {
   children: ReactNode
+  fallback?: ReactNode
 }
 
 interface State {
@@ -21,14 +23,20 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo)
-    // Here you would log the error to an error reporting service
-    // For example: logErrorToService(error, errorInfo);
+    // Capture error to Sentry with React context
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+    })
   }
 
   public render() {
     if (this.state.hasError) {
-      return <ErrorPage error={this.state.error} />
+      // Use custom fallback if provided, otherwise use ErrorPage
+      return this.props.fallback || <ErrorPage error={this.state.error} />
     }
 
     return this.props.children

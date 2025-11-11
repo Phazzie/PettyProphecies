@@ -4,34 +4,58 @@ import bcrypt from "bcryptjs"
 import { User } from "../../../models/User"
 import { connectToDatabase } from "../../../utils/database"
 import { errorHandler } from "../../../middleware/errorHandler"
-import { rateLimitMiddleware } from "../../../middleware/rateLimit"
 import { ValidationError, AuthenticationError } from "../../../types/errors"
+import { getRateLimiter, setRateLimitHeaders, RateLimitError } from '@/src/middleware/rateLimit.v2'
 import { getAuthService } from '@/src/middleware/auth.v2'
+import { getCSRFService } from '@/src/middleware/csrf'
 import { UserRepository } from '@/src/repositories/UserRepository'
 import { emailService } from '@/src/services/email'
 import { sendSuccess } from '@/src/utils/apiResponse'
 import { errorHandler as errorHandlerV2 } from '@/src/middleware/errorHandler.v2'
 import { ConflictError, AuthenticationError as AuthenticationErrorV2, ValidationError as ValidationErrorV2 } from '@/src/interfaces/seams'
+import logger from '@/src/utils/logger'
 
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
   throw new Error("JWT_SECRET is not set in environment variables")
 })()
 
 const authService = getAuthService()
+const csrfService = getCSRFService()
 const userRepo = new UserRepository()
+const rateLimiter = getRateLimiter()
+
+/**
+ * Get identifier for rate limiting (IP address)
+ */
+function getIdentifier(req: NextApiRequest): string {
+  return (
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    req.socket.remoteAddress ||
+    'unknown'
+  )
+}
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
 
   const { auth } = req.query
 
-  // Support GET requests for verify endpoint
-  if (req.method === "GET" && auth?.[0] === "verify") {
-    return handleVerify(req, res)
+  // Support GET requests
+  if (req.method === "GET") {
+    if (auth?.[0] === "verify") {
+      return handleVerify(req, res)
+    }
+    if (auth?.[0] === "csrf") {
+      const csrfToken = await csrfService.generateToken(req, res)
+      return sendSuccess(res, { csrfToken })
+    }
   }
 
-  // Support POST requests
+  // Support POST requests with CSRF validation
   if (req.method === "POST") {
+    // Validate CSRF token for all POST endpoints
+    await csrfService.validateToken(req)
+
     switch (auth?.[0]) {
       case "login":
         return handleLogin(req, res)
@@ -48,6 +72,18 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleVerify(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:verify')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many verification requests. Try again in ${rateLimitResult.retryAfter} seconds.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
   // Use authService to verify cookie and get userId
   const userId = await authService.verifyToken(req)
 
@@ -78,6 +114,18 @@ async function handleVerify(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:register')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many registration attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
   const { username, email, password } = req.body
 
   // Validate inputs
@@ -108,7 +156,7 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
 
   // Send welcome email (non-blocking)
   emailService.sendWelcome(user.email, user.username).catch(err => {
-    console.error('Failed to send welcome email:', err)
+    logger.error({ error: err, userId: user._id }, 'Failed to send welcome email')
   })
 
   // Return success (NO TOKEN in response body!)
@@ -123,6 +171,18 @@ async function handleRegister(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleLogin(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:login')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many login attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
   const { email, password } = req.body
 
   // Validate inputs
@@ -157,6 +217,18 @@ async function handleLogin(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function handleLogout(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:logout')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many logout requests. Try again in ${rateLimitResult.retryAfter} seconds.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
   // Clear the httpOnly cookie
   authService.clearAuthCookie(res)
 
@@ -165,5 +237,5 @@ async function handleLogout(req: NextApiRequest, res: NextApiResponse) {
   })
 }
 
-export default rateLimitMiddleware(errorHandler(handler))
+export default errorHandler(handler)
 

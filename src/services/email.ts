@@ -18,6 +18,7 @@ import { render } from "@react-email/render"
 import type { IEmailService, EmailOptions } from "@/src/interfaces/seams"
 import { PasswordResetEmail } from "@/src/templates/email/PasswordResetEmail"
 import { WelcomeEmail } from "@/src/templates/email/WelcomeEmail"
+import logger from "../utils/logger"
 
 /**
  * EmailService class implementing IEmailService interface
@@ -39,8 +40,8 @@ export class EmailService implements IEmailService {
     } else {
       this.isConfigured = false
       if (process.env.NODE_ENV !== "production") {
-        console.warn(
-          "⚠️  RESEND_API_KEY not configured. Emails will be logged instead of sent."
+        logger.warn({},
+          "RESEND_API_KEY not configured. Emails will be logged instead of sent."
         )
       }
     }
@@ -76,7 +77,7 @@ export class EmailService implements IEmailService {
         html,
       })
     } catch (error) {
-      console.error("Failed to send password reset email:", error)
+      logger.error({ error }, "Failed to send password reset email")
       throw new Error("Failed to send password reset email")
     }
   }
@@ -100,7 +101,7 @@ export class EmailService implements IEmailService {
         html,
       })
     } catch (error) {
-      console.error("Failed to send welcome email:", error)
+      logger.error({ error }, "Failed to send welcome email")
       throw new Error("Failed to send welcome email")
     }
   }
@@ -144,7 +145,7 @@ export class EmailService implements IEmailService {
 
       await this.resend!.emails.send(emailPayload)
     } catch (error: any) {
-      console.error("Failed to send email:", error)
+      logger.error({ error }, "Failed to send email")
 
       // Provide more context for specific errors
       if (error?.statusCode === 429) {
@@ -181,18 +182,18 @@ export class EmailService implements IEmailService {
    * @param options - Email options to log
    */
   private logEmail(options: EmailOptions): void {
-    console.warn(
-      "📧 RESEND_API_KEY not configured. Would send email:",
+    logger.warn(
       {
         from: this.from,
         to: options.to,
         subject: options.subject,
         htmlPreview: options.html.substring(0, 100) + "...",
-      }
+      },
+      "RESEND_API_KEY not configured. Would send email:"
     )
 
     if (process.env.NODE_ENV === "development") {
-      console.log("Full email HTML:", options.html)
+      logger.debug({ html: options.html }, "Full email HTML")
     }
   }
 }

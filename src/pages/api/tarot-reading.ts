@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { withAuth } from "../../middleware/auth.v2"
 import { errorHandler } from "../../middleware/errorHandler"
 import { requestLogger } from "../../middleware/requestLogger"
-import { rateLimitMiddleware } from "../../middleware/rateLimit"
+import { getRateLimiter, setRateLimitHeaders, RateLimitError } from "../../middleware/rateLimit.v2"
+import { getCSRFService } from "../../middleware/csrf"
 import { getSpreadByName } from "../../data/tarotSpreads"
 import { connectToDatabase } from "../../utils/database"
 import { ReadingRepository } from "../../repositories/ReadingRepository"
@@ -11,9 +12,41 @@ import { ValidationError, DatabaseError } from "../../interfaces/seams"
 import { generateAIReading, isAIAvailable, getAIModelInfo } from "../../services/aiTarot"
 import { sendSuccess, sendError } from "../../utils/apiResponse"
 
+const rateLimiter = getRateLimiter()
+
+/**
+ * Get identifier for rate limiting (IP address or user ID)
+ */
+function getIdentifier(req: NextApiRequest): string {
+  return (
+    req.userId ||
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    req.socket.remoteAddress ||
+    'unknown'
+  )
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
   const readingRepository = new ReadingRepository()
+
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'tarot:reading')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many reading requests. Try again in ${rateLimitResult.retryAfter} seconds.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
+  // Validate CSRF token for POST and PUT requests
+  if (req.method === "POST" || req.method === "PUT") {
+    const csrfService = getCSRFService()
+    await csrfService.validateToken(req)
+  }
 
   if (req.method === "POST") {
     const { spreadName, useAI } = req.body
@@ -37,19 +70,19 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (shouldUseAI) {
       try {
-        logger.info("Generating AI reading", { userId: req.userId, spreadName })
+        logger.info({ userId: req.userId, spreadName }, "Generating AI reading")
         interpretation = await generateAIReading({
           cards: reading,
           spread,
         })
         aiGenerated = true
-        logger.info("AI reading generated successfully", { userId: req.userId, spreadName })
+        logger.info({ userId: req.userId, spreadName }, "AI reading generated successfully")
       } catch (error) {
-        logger.warn("AI reading failed, falling back to template", {
+        logger.warn({
           userId: req.userId,
           spreadName,
           error: error instanceof Error ? error.message : "Unknown error"
-        })
+        }, "AI reading failed, falling back to template")
         interpretation = spread.interpret(reading)
         aiGenerated = false
       }
@@ -66,11 +99,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         aiGenerated,
       })
 
-      logger.info("New reading created", {
+      logger.info({
         userId: req.userId,
         spreadName,
         aiGenerated
-      })
+      }, "New reading created")
 
       const modelInfo = aiGenerated ? getAIModelInfo() : undefined
 
@@ -108,7 +141,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         throw new DatabaseError("Failed to update rating")
       }
 
-      logger.info("Reading rated", { userId: req.userId, readingId, rating })
+      logger.info({ userId: req.userId, readingId, rating }, "Reading rated")
 
       return sendSuccess(res, {
         message: "Rating updated successfully",
@@ -125,5 +158,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default rateLimitMiddleware(withAuth(requestLogger(errorHandler(handler))))
+export default withAuth(requestLogger(errorHandler(handler)))
 
