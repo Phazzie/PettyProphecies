@@ -250,7 +250,8 @@ describe("PasswordResetRepository", () => {
       const mockQuery = {
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockResets),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockResets),
       }
       mockFind.mockReturnValue(mockQuery)
 

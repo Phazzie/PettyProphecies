@@ -49,7 +49,7 @@ export class ReadingRepository implements IReadingRepository {
 
     query = query.sort(sortOption)
 
-    return await query
+    return await query.lean() as unknown as IReading[]
   }
 
   /**
@@ -98,7 +98,7 @@ export class ReadingRepository implements IReadingRepository {
       queryBuilder = queryBuilder.sort(options.sort)
     }
 
-    return await queryBuilder
+    return await queryBuilder.lean() as unknown as IReading[]
   }
 
   /**
@@ -108,7 +108,7 @@ export class ReadingRepository implements IReadingRepository {
    */
   async create(data: Partial<IReading>): Promise<IReading> {
     const reading = new Reading(data)
-    return await reading.save()
+    return await reading.save() as unknown as IReading
   }
 
   /**

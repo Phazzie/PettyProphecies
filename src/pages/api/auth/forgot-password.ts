@@ -115,7 +115,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void>
   // These will be provided by Agent 4 and Agent 5
   const { UserRepository } = await import("../../../repositories/UserRepository")
   const { PasswordResetRepository } = await import("../../../repositories/PasswordResetRepository")
-  const { EmailService } = await import("../../../services/EmailService")
+  const { EmailService } = await import("../../../services/email")
 
   const userRepository = new UserRepository()
   const passwordResetRepository = new PasswordResetRepository()

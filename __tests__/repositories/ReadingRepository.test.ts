@@ -78,7 +78,8 @@ describe("ReadingRepository", () => {
       const mockChain = {
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockReadings),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockReadings),
       }
       mockFind.mockReturnValue(mockChain)
 
@@ -95,7 +96,8 @@ describe("ReadingRepository", () => {
       const mockChain = {
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockReadings),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockReadings),
       }
       mockFind.mockReturnValue(mockChain)
 
@@ -115,7 +117,8 @@ describe("ReadingRepository", () => {
       const mockChain = {
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockReadings),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockReadings),
       }
       mockFind.mockReturnValue(mockChain)
 
@@ -130,7 +133,8 @@ describe("ReadingRepository", () => {
       const mockChain = {
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue([]),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue([]),
       }
       mockFind.mockReturnValue(mockChain)
 
@@ -285,7 +289,8 @@ describe("ReadingRepository", () => {
       const mockQuery = {
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockReadings),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockReadings),
       }
       mockFind.mockReturnValue(mockQuery)
 

@@ -115,7 +115,7 @@ export class PasswordResetRepository implements IPasswordResetRepository {
       queryBuilder = queryBuilder.sort(options.sort)
     }
 
-    return await queryBuilder
+    return await queryBuilder.lean() as unknown as IPasswordReset[]
   }
 
   /**
@@ -127,7 +127,7 @@ export class PasswordResetRepository implements IPasswordResetRepository {
    */
   async create(data: Partial<IPasswordReset>): Promise<IPasswordReset> {
     const passwordReset = new PasswordReset(data)
-    return await passwordReset.save()
+    return await passwordReset.save() as unknown as IPasswordReset
   }
 
   /**

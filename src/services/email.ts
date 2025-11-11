@@ -66,7 +66,7 @@ export class EmailService implements IEmailService {
     const resetUrl = `${appUrl}/reset-password?token=${resetToken}`
 
     try {
-      const html = render(
+      const html = await render(
         PasswordResetEmail({ username, resetUrl })
       )
 
@@ -92,7 +92,7 @@ export class EmailService implements IEmailService {
     this.validateEmail(email)
 
     try {
-      const html = render(WelcomeEmail({ username }))
+      const html = await render(WelcomeEmail({ username }))
 
       await this.send({
         to: email,

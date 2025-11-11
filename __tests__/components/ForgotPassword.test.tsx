@@ -5,17 +5,16 @@
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { ForgotPassword } from "../../src/components/ForgotPassword"
-import { jest } from "@jest/globals"
 
-// Mock the API request hook
+// Mock the API request hook - must be before component import
 const mockRequest = jest.fn()
+const mockApiRequestReturn = {
+  request: mockRequest,
+  loading: false,
+  error: null,
+}
 jest.mock("../../src/hooks/useApiRequest", () => ({
-  useApiRequest: () => ({
-    request: mockRequest,
-    loading: false,
-    error: null,
-  }),
+  useApiRequest: () => mockApiRequestReturn,
 }))
 
 // Mock the toast notification
@@ -26,9 +25,14 @@ jest.mock("sonner", () => ({
   },
 }))
 
+import { ForgotPassword } from "../../src/components/ForgotPassword"
+
 describe("ForgotPassword Component", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Reset mock state
+    mockApiRequestReturn.loading = false
+    mockApiRequestReturn.error = null
   })
 
   describe("Rendering", () => {
@@ -83,33 +87,17 @@ describe("ForgotPassword Component", () => {
     })
 
     it("should disable submit button when loading", () => {
-      const mockLoadingRequest = jest.fn()
-      jest.isolateModules(() => {
-        jest.mock("../../src/hooks/useApiRequest", () => ({
-          useApiRequest: () => ({
-            request: mockLoadingRequest,
-            loading: true,
-            error: null,
-          }),
-        }))
-      })
+      mockApiRequestReturn.loading = true
 
       render(<ForgotPassword />)
 
-      const submitButton = screen.getByRole("button", { name: /send reset link/i })
+      // When loading, button text changes to spinner, so query without name
+      const submitButton = screen.getByRole("button")
       expect(submitButton).toBeDisabled()
     })
 
     it("should show loading spinner when submitting", async () => {
-      jest.isolateModules(() => {
-        jest.mock("../../src/hooks/useApiRequest", () => ({
-          useApiRequest: () => ({
-            request: jest.fn(),
-            loading: true,
-            error: null,
-          }),
-        }))
-      })
+      mockApiRequestReturn.loading = true
 
       render(<ForgotPassword />)
 
@@ -130,7 +118,9 @@ describe("ForgotPassword Component", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid email/i)).toBeInTheDocument()
+        // Error appears in both ErrorAnnouncer and ErrorMessage, use getAllByText
+        const errors = screen.getAllByText(/invalid email/i)
+        expect(errors.length).toBeGreaterThan(0)
       })
     })
 
@@ -142,7 +132,9 @@ describe("ForgotPassword Component", () => {
       await user.click(submitButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+        // Error appears in both ErrorAnnouncer and ErrorMessage, use getAllByText
+        const errors = screen.getAllByText(/email is required/i)
+        expect(errors.length).toBeGreaterThan(0)
       })
     })
 
@@ -156,7 +148,8 @@ describe("ForgotPassword Component", () => {
       // Trigger validation error
       await user.click(submitButton)
       await waitFor(() => {
-        expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+        const errors = screen.getAllByText(/email is required/i)
+        expect(errors.length).toBeGreaterThan(0)
       })
 
       // Start typing - error should clear
@@ -170,8 +163,14 @@ describe("ForgotPassword Component", () => {
   describe("Success message", () => {
     it("should display success message after successful submission", async () => {
       const user = userEvent.setup()
-      mockRequest.mockResolvedValue({
+      const responseData = {
         message: "If that email exists, we've sent reset instructions.",
+      }
+      mockRequest.mockImplementation(async (options: any) => {
+        if (options.onSuccess) {
+          options.onSuccess(responseData)
+        }
+        return responseData
       })
 
       render(<ForgotPassword />)
@@ -193,8 +192,14 @@ describe("ForgotPassword Component", () => {
 
     it("should show success message with proper role for screen readers", async () => {
       const user = userEvent.setup()
-      mockRequest.mockResolvedValue({
+      const responseData = {
         message: "If that email exists, we've sent reset instructions.",
+      }
+      mockRequest.mockImplementation(async (options: any) => {
+        if (options.onSuccess) {
+          options.onSuccess(responseData)
+        }
+        return responseData
       })
 
       render(<ForgotPassword />)
@@ -204,15 +209,27 @@ describe("ForgotPassword Component", () => {
       await user.click(screen.getByRole("button", { name: /send reset link/i }))
 
       await waitFor(() => {
-        const successMessage = screen.getByRole("status")
+        // Multiple elements have role="status" (ErrorAnnouncer + success message)
+        const statusElements = screen.getAllByRole("status")
+        // Find the visible one with the success message
+        const successMessage = statusElements.find(el =>
+          el.textContent?.includes("If that email exists")
+        )
+        expect(successMessage).toBeDefined()
         expect(successMessage).toHaveAttribute("aria-live", "polite")
       })
     })
 
     it("should clear form after successful submission", async () => {
       const user = userEvent.setup()
-      mockRequest.mockResolvedValue({
+      const responseData = {
         message: "If that email exists, we've sent reset instructions.",
+      }
+      mockRequest.mockImplementation(async (options: any) => {
+        if (options.onSuccess) {
+          options.onSuccess(responseData)
+        }
+        return responseData
       })
 
       render(<ForgotPassword />)

@@ -20,9 +20,10 @@ import { LoadingSpinner } from "./LoadingSpinner"
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
-  const { request, loading } = useApiRequest<{ message: string }>()
+  const { request, loading, error } = useApiRequest<{ message: string }>()
   const [success, setSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [apiError, setApiError] = useState<string>("")
 
   /**
    * Handles email input change
@@ -64,6 +65,7 @@ export const ForgotPassword: React.FC = () => {
     if (validate()) {
       setSuccess(false)
       setSuccessMessage("")
+      setApiError("")
 
       try {
         await request({
@@ -79,9 +81,23 @@ export const ForgotPassword: React.FC = () => {
             setEmail("")
           },
         })
-      } catch (err) {
+      } catch (err: any) {
         console.error("Forgot password error:", err)
         setSuccess(false)
+        // Handle error from rejected promise - try different error structures
+        let errorMessage = "An error occurred"
+        try {
+          if (typeof err === "string") {
+            errorMessage = err
+          } else if (err?.error?.message) {
+            errorMessage = err.error.message
+          } else if (err?.message) {
+            errorMessage = err.message
+          }
+        } catch {
+          // If accessing error properties fails, use default message
+        }
+        setApiError(errorMessage)
       }
     }
   }
@@ -94,6 +110,7 @@ export const ForgotPassword: React.FC = () => {
       className="space-y-4"
       aria-labelledby="forgot-password-heading"
       role="form"
+      noValidate
     >
       <h2 id="forgot-password-heading" className="text-xl font-semibold mb-4">
         Forgot Password
@@ -131,6 +148,12 @@ export const ForgotPassword: React.FC = () => {
       {success && successMessage && (
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md" role="status" aria-live="polite">
           <p className="text-green-800 text-sm">{successMessage}</p>
+        </div>
+      )}
+
+      {(error || apiError) && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md" role="alert">
+          <p className="text-red-800 text-sm">{apiError || error?.message}</p>
         </div>
       )}
     </form>

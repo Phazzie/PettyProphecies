@@ -77,7 +77,7 @@ export class UserRepository implements IUserRepository {
       queryBuilder = queryBuilder.sort(options.sort)
     }
 
-    return await queryBuilder
+    return await queryBuilder.lean() as unknown as IUser[]
   }
 
   /**
@@ -90,7 +90,7 @@ export class UserRepository implements IUserRepository {
   async create(data: Partial<IUser>): Promise<IUser> {
     try {
       const user = new User(data)
-      return await user.save()
+      return await user.save() as unknown as IUser
     } catch (error: any) {
       // Handle duplicate key error (E11000)
       if (error.code === 11000) {

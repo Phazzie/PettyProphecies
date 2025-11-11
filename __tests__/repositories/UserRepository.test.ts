@@ -358,7 +358,8 @@ describe("UserRepository", () => {
       const mockQuery = {
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockUsers),
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockUsers),
       }
       mockFind.mockReturnValue(mockQuery)
 

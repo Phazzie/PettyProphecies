@@ -241,11 +241,12 @@ describe("TarotReading Component", () => {
       // Act
       render(<TarotReading />)
 
-      // Assert
-      expect(screen.getByRole("button", { name: /Get Reading/i })).toBeDisabled()
-      // Check for loading indicator (could be spinner or text)
-      const button = screen.getByRole("button", { name: /Get Reading/i })
-      expect(button).toHaveAttribute("aria-busy", "true")
+      // Assert - When loading, button text changes to spinner, so can't query by name
+      const buttons = screen.getAllByRole("button")
+      const submitButton = buttons.find(btn => btn.getAttribute("type") === "submit")
+      expect(submitButton).toBeDefined()
+      expect(submitButton).toBeDisabled()
+      expect(submitButton).toHaveAttribute("aria-busy", "true")
     })
 
     it("should disable submit button during loading", () => {
@@ -259,8 +260,10 @@ describe("TarotReading Component", () => {
       // Act
       render(<TarotReading />)
 
-      // Assert
-      const submitButton = screen.getByRole("button", { name: /Get Reading/i })
+      // Assert - When loading, button text changes to spinner, so can't query by name
+      const buttons = screen.getAllByRole("button")
+      const submitButton = buttons.find(btn => btn.getAttribute("type") === "submit")
+      expect(submitButton).toBeDefined()
       expect(submitButton).toBeDisabled()
     })
 
@@ -276,8 +279,10 @@ describe("TarotReading Component", () => {
       render(<TarotReading />)
 
       // Assert - Check for loading spinner component or aria-busy attribute
-      const button = screen.getByRole("button", { name: /Get Reading/i })
-      expect(button).toHaveAttribute("aria-busy", "true")
+      const buttons = screen.getAllByRole("button")
+      const submitButton = buttons.find(btn => btn.getAttribute("type") === "submit")
+      expect(submitButton).toBeDefined()
+      expect(submitButton).toHaveAttribute("aria-busy", "true")
     })
   })
 
@@ -503,8 +508,8 @@ describe("TarotReading Component", () => {
       })
 
       // Act - Rate the reading
-      const ratingButtons = screen.getAllByRole("button", { name: /Rate \d star/i })
-      fireEvent.click(ratingButtons[4]) // 5 stars
+      const ratingButton = screen.getByRole("button", { name: /Rate 5 stars/i })
+      fireEvent.click(ratingButton)
 
       // Assert
       await waitFor(() => {

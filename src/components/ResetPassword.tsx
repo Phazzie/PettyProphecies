@@ -243,10 +243,10 @@ export const ResetPassword: React.FC = () => {
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           aria-invalid={confirmPasswordError ? "true" : "false"}
-          aria-describedby={confirmPasswordError ? "confirmPassword-error" : undefined}
+          aria-describedby={confirmPasswordError ? "confirm-password-error" : undefined}
         />
         {confirmPasswordError && (
-          <ErrorMessage id="confirmPassword-error" message={confirmPasswordError} />
+          <ErrorMessage id="confirm-password-error" message={confirmPasswordError} />
         )}
       </div>
 
