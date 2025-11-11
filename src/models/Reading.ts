@@ -6,6 +6,7 @@ export interface IReading extends mongoose.Document {
   cards: string[]
   interpretation: string
   rating?: number
+  aiGenerated?: boolean
   createdAt: Date
 }
 
@@ -15,6 +16,7 @@ const readingSchema = new mongoose.Schema({
   cards: { type: [String], required: true },
   interpretation: { type: String, required: true },
   rating: { type: Number, min: 1, max: 5 },
+  aiGenerated: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 })
 

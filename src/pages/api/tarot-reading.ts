@@ -8,12 +8,13 @@ import { connectToDatabase } from "../../utils/database"
 import { Reading } from "../../models/Reading"
 import logger from "../../utils/logger"
 import { ValidationError, DatabaseError } from "../../types/errors"
+import { generateAIReading, isAIAvailable, getAIModelInfo } from "../../services/aiTarot"
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
 
   if (req.method === "POST") {
-    const { spreadName } = req.body
+    const { spreadName, useAI } = req.body
     const spread = getSpreadByName(spreadName)
 
     if (!spread) {
@@ -21,7 +22,38 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const reading = spread.getReading()
-    const interpretation = spread.interpret(reading)
+
+    /**
+     * Generate interpretation using AI or template
+     * - Uses AI if useAI=true and AI service is available
+     * - Falls back to template if AI unavailable or useAI=false
+     * - Default: useAI=true when AI is available
+     */
+    const shouldUseAI = useAI !== false && isAIAvailable()
+    let interpretation: string
+    let aiGenerated = false
+
+    if (shouldUseAI) {
+      try {
+        logger.info("Generating AI reading", { userId: req.userId, spreadName })
+        interpretation = await generateAIReading({
+          cards: reading,
+          spread,
+        })
+        aiGenerated = true
+        logger.info("AI reading generated successfully", { userId: req.userId, spreadName })
+      } catch (error) {
+        logger.warn("AI reading failed, falling back to template", {
+          userId: req.userId,
+          spreadName,
+          error: error instanceof Error ? error.message : "Unknown error"
+        })
+        interpretation = spread.interpret(reading)
+        aiGenerated = false
+      }
+    } else {
+      interpretation = spread.interpret(reading)
+    }
 
     try {
       const newReading = new Reading({
@@ -29,12 +61,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         spreadName,
         cards: reading.map((card) => card.name),
         interpretation,
+        aiGenerated,
       })
       await newReading.save()
 
-      logger.info("New reading created", { userId: req.userId, spreadName })
+      logger.info("New reading created", {
+        userId: req.userId,
+        spreadName,
+        aiGenerated
+      })
 
-      res.status(200).json({ reading, interpretation, readingId: newReading._id })
+      const modelInfo = aiGenerated ? getAIModelInfo() : undefined
+
+      res.status(200).json({
+        reading,
+        interpretation,
+        readingId: newReading._id,
+        aiGenerated,
+        modelInfo,
+      })
     } catch (error) {
       throw new DatabaseError("Failed to save reading")
     }
