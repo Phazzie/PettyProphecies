@@ -329,13 +329,25 @@ export class ConflictError extends Error {
 }
 
 export class RateLimitError extends Error {
+  public resetAt?: Date
+  public retryAfter?: number
+
   constructor(
     message: string = "Too many requests",
-    public retryAfter?: number, // Seconds until retry
-    public resetAt?: Date // When the rate limit resets
+    resetAtOrRetryAfter?: Date | number,
+    retryAfter?: number
   ) {
     super(message)
     this.name = "RateLimitError"
+
+    // Smart parameter handling: second param can be either Date or number
+    if (resetAtOrRetryAfter instanceof Date) {
+      this.resetAt = resetAtOrRetryAfter
+      this.retryAfter = retryAfter
+    } else if (typeof resetAtOrRetryAfter === "number") {
+      this.retryAfter = resetAtOrRetryAfter
+      this.resetAt = retryAfter instanceof Date ? retryAfter : undefined
+    }
   }
 }
 

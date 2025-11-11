@@ -68,10 +68,6 @@ jest.mock("@/src/utils/logger", () => ({
 }))
 
 // Mock middleware to pass through
-jest.mock("@/src/middleware/auth", () => ({
-  authMiddleware: (handler: any) => handler,
-}))
-
 jest.mock("@/src/middleware/auth.v2", () => ({
   withAuth: (handler: any) => handler,
   getAuthService: jest.fn(),

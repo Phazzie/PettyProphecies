@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/lib/AuthContext"
 import { SentryProvider } from "@/components/SentryProvider"
+import { SkipLinks } from "@/components/SkipLinks"
 import { Toaster } from "sonner"
 import "./globals.css"
 import type React from "react"
@@ -17,9 +18,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SkipLinks />
         <SentryProvider>
           <AuthProvider>
-            {children}
+            <main id="main-content">
+              {children}
+            </main>
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </SentryProvider>

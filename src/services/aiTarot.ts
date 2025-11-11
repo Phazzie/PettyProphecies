@@ -75,17 +75,26 @@ Give a reading that is:
 
 Write the reading now. Be snarky, be insightful, be memorable.`
 
-    const completion = await xai.chat.completions.create({
-      model: "grok-4-fast-reasoning",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.8,
-      max_tokens: 1000,
+    // Add timeout to prevent indefinite hanging (30 seconds)
+    const AI_TIMEOUT_MS = 30000
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("AI request timed out after 30 seconds")), AI_TIMEOUT_MS)
     })
+
+    const completion = await Promise.race([
+      xai.chat.completions.create({
+        model: "grok-4-fast-reasoning",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 1000,
+      }),
+      timeoutPromise,
+    ])
 
     if (
       !completion.choices ||

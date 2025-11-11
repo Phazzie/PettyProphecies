@@ -104,8 +104,8 @@ export class CSRFService implements ICSRFService {
       "SameSite=Strict",
       "Path=/",
       `Max-Age=${TOKEN_EXPIRY_SECONDS}`,
-      // Note: Secure flag should be added in production (HTTPS only)
-      // "Secure",
+      // Secure flag enabled in production (HTTPS only)
+      ...(process.env.NODE_ENV === "production" ? ["Secure"] : []),
     ].join("; ")
 
     res.setHeader("Set-Cookie", cookieValue)

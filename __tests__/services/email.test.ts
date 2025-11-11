@@ -43,6 +43,20 @@ jest.mock("@react-email/render", () => ({
   render: jest.fn((component: any) => component),
 }))
 
+// Mock logger to prevent setImmediate issues in Jest
+jest.mock("@/src/utils/logger", () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  default: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}))
+
 // Import AFTER mocks are set up
 import { EmailService } from "@/src/services/email"
 
