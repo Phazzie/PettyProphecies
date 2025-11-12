@@ -1,0 +1,288 @@
+name: Claude Test Generator
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  generate-tests:
+    # Trigger on PR or when someone comments "/generate-tests"
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/generate-tests'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      
+      - name: Run Coverage Analysis
+        run: |
+          npm run test:ci -- --coverage --json --outputFile=coverage-summary.json || true
+          npm run test:ci -- --coverage || true
+        continue-on-error: true
+      
+      - name: Generate Missing Tests
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are generating comprehensive tests for untested code.
+            
+            CONTEXT:
+            - Repository: ${{ github.repository }}
+            - ${{ github.event.pull_request && format('PR #{0}', github.event.pull_request.number) || 'Current branch' }}
+            
+            TASK: Analyze code coverage and generate tests for untested code.
+            
+            ## 1. Analyze Coverage
+            
+            ```bash
+            # Check coverage report
+            cat coverage-summary.json 2>/dev/null || echo "No coverage data"
+            
+            # List untested files
+            find src/ -name "*.ts" -o -name "*.tsx" | while read file; do
+              testfile="__tests__/$(echo $file | sed 's/src\///' | sed 's/\.tsx\?/.test.ts/')"
+              if [ ! -f "$testfile" ]; then
+                echo "Missing test: $file"
+              fi
+            done
+            ```
+            
+            ## 2. Prioritize Test Generation
+            
+            Focus on (in order):
+            1. **Critical paths:**
+               - Authentication (`src/middleware/auth.ts`, `src/lib/AuthContext.tsx`)
+               - API routes (`src/pages/api/*`)
+               - Data models (`src/models/*`)
+            
+            2. **New code in PR:**
+               ```bash
+               git diff --name-only ${{ github.event.pull_request.base.sha || 'HEAD~1' }} ${{ github.event.pull_request.head.sha || 'HEAD' }} | grep "src/"
+               ```
+            
+            3. **Complex logic:**
+               - Tarot reading generation
+               - Spread calculations
+               - Validation functions
+            
+            4. **Previously untested code:**
+               - Components without test files
+               - Utility functions
+               - Hooks
+            
+            ## 3. Test Generation Guidelines
+            
+            Follow existing patterns from `__tests__/` directory:
+            
+            ### For Components:
+            ```typescript
+            import { render, screen, waitFor } from "@testing-library/react"
+            import userEvent from "@testing-library/user-event"
+            import { ComponentName } from "@/src/components/ComponentName"
+            
+            describe("ComponentName", () => {
+              it("should render successfully", () => {
+                render(<ComponentName />)
+                expect(screen.getByText("Expected Text")).toBeInTheDocument()
+              })
+            
+              it("should handle user interaction", async () => {
+                const user = userEvent.setup()
+                render(<ComponentName />)
+                
+                await user.click(screen.getByRole("button"))
+                
+                await waitFor(() => {
+                  expect(screen.getByText("Result")).toBeInTheDocument()
+                })
+              })
+            
+              it("should handle error state", () => {
+                // Test error handling
+              })
+            })
+            ```
+            
+            ### For API Routes:
+            ```typescript
+            import { NextApiRequest, NextApiResponse } from "next"
+            import handler from "@/src/pages/api/route"
+            
+            describe("API /api/route", () => {
+              let req: Partial<NextApiRequest>
+              let res: Partial<NextApiResponse>
+            
+              beforeEach(() => {
+                req = {
+                  method: "POST",
+                  body: {},
+                }
+                res = {
+                  status: jest.fn().mockReturnThis(),
+                  json: jest.fn().mockReturnThis(),
+                }
+              })
+            
+              it("should return 200 on valid request", async () => {
+                await handler(req as NextApiRequest, res as NextApiResponse)
+                expect(res.status).toHaveBeenCalledWith(200)
+              })
+            
+              it("should return 405 on invalid method", async () => {
+                req.method = "GET"
+                await handler(req as NextApiRequest, res as NextApiResponse)
+                expect(res.status).toHaveBeenCalledWith(405)
+              })
+            
+              it("should validate input", async () => {
+                // Test validation
+              })
+            
+              it("should handle errors", async () => {
+                // Test error scenarios
+              })
+            })
+            ```
+            
+            ### For Utilities:
+            ```typescript
+            import { functionName } from "@/src/utils/file"
+            
+            describe("functionName", () => {
+              it("should handle happy path", () => {
+                expect(functionName(input)).toBe(expectedOutput)
+              })
+            
+              it("should handle edge cases", () => {
+                expect(functionName(edgeCase)).toBe(edgeOutput)
+              })
+            
+              it("should throw on invalid input", () => {
+                expect(() => functionName(invalid)).toThrow()
+              })
+            })
+            ```
+            
+            ## 4. Test Coverage Requirements
+            
+            For each file, generate tests covering:
+            - ✅ Happy path (normal operation)
+            - ✅ Edge cases (empty, null, undefined, boundary values)
+            - ✅ Error handling (invalid input, exceptions)
+            - ✅ Integration (if applicable)
+            - ✅ State changes (for components)
+            - ✅ Async operations (loading, success, error)
+            
+            ## 5. Mock External Dependencies
+            
+            ```typescript
+            // Mock database
+            jest.mock("@/src/utils/database")
+            
+            // Mock auth
+            jest.mock("@/src/lib/AuthContext", () => ({
+              useAuth: () => ({
+                user: { id: "123", email: "test@example.com" },
+                isAuthenticated: true,
+              }),
+            }))
+            
+            // Mock API calls
+            global.fetch = jest.fn()
+            ```
+            
+            ## 6. Generate and Validate Tests
+            
+            For each untested file:
+            1. Create test file in `__tests__/` matching source structure
+            2. Write comprehensive test suite
+            3. Run tests to verify they work:
+               ```bash
+               npm run test:ci -- path/to/test.test.ts
+               ```
+            4. If tests fail, fix them
+            5. Commit working tests
+            
+            ## 7. Report Coverage Improvement
+            
+            After generating tests:
+            ```bash
+            # Run coverage again
+            npm run test:ci -- --coverage --json --outputFile=coverage-after.json
+            
+            # Calculate improvement
+            # Compare before/after coverage percentages
+            ```
+            
+            ${{ github.event.pull_request && format('Comment on PR #{0}:', github.event.pull_request.number) || 'Create summary:' }}
+            
+            ```markdown
+            ## 🧪 Test Generation Summary
+            
+            Generated tests for X untested files:
+            
+            ### New Test Files:
+            - ✅ `__tests__/components/ComponentName.test.tsx` (8 tests)
+            - ✅ `__tests__/utils/helper.test.ts` (12 tests)
+            - ✅ `__tests__/api/endpoint.test.ts` (6 tests)
+            
+            ### Coverage Improvement:
+            - Before: X% coverage
+            - After: Y% coverage
+            - Improvement: +Z%
+            
+            ### Test Breakdown:
+            - Total Tests: X
+            - Passing: X
+            - Components: X tests
+            - API Routes: X tests
+            - Utilities: X tests
+            
+            All tests follow existing patterns and include happy path, edge cases, and error handling.
+            ```
+            
+            ## 8. Commit Tests
+            
+            ```bash
+            git config user.name "Claude Bot"
+            git config user.email "bot@claude.ai"
+            git add __tests__/
+            git commit -m "test: Generate missing tests [automated]
+            
+            - Added tests for X files
+            - Coverage increased by Y%
+            - All tests passing
+            "
+            git push
+            ```
+            
+            QUALITY CHECKS:
+            - All generated tests must pass
+            - Tests must follow existing patterns
+            - Proper mocking of dependencies
+            - Meaningful test descriptions
+            - Good coverage of edge cases
+          
+          claude_args: '--allowed-tools "Bash(*)"'

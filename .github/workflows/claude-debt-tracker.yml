@@ -1,0 +1,183 @@
+name: Claude Technical Debt Tracker
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+
+jobs:
+  update-debt-tracker:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+      issues: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Analyze and Update Technical Debt
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are maintaining the TECHNICAL_DEBT.md file to track project technical debt.
+            
+            TASK: Analyze recent changes and update the technical debt tracker.
+            
+            PROCESS:
+            
+            ## 1. Identify Fixed Items
+            
+            ${{ github.event_name == 'pull_request' && format('Analyze merged PR #{0}:', github.event.pull_request.number) || 'Analyze recent commits:' }}
+            
+            ```bash
+            # Get recent changes
+            ${{ github.event_name == 'pull_request' && format('gh pr view {0} --json title,body,commits', github.event.pull_request.number) || 'git log --since="1 week ago" --oneline' }}
+            git diff HEAD~10..HEAD
+            ```
+            
+            Look for:
+            - Files that were refactored
+            - Security fixes (SEC-*)
+            - Quality improvements (QUAL-*)
+            - Performance optimizations (PERF-*)
+            - Bug fixes (BUG-*)
+            - Tests added (TEST-*)
+            - Shortcuts removed (SHORTCUT-*)
+            
+            Cross-reference with TECHNICAL_DEBT.md items.
+            
+            ## 2. Detect New Technical Debt
+            
+            Scan the codebase for:
+            ```bash
+            # Find TODOs and FIXMEs
+            grep -r "TODO\|FIXME\|HACK\|XXX" src/ --exclude-dir=node_modules
+            
+            # Find any types
+            grep -r ": any" src/ --include="*.ts" --include="*.tsx"
+            
+            # Find console.logs (should use logger)
+            grep -r "console\\.log\|console\\.error" src/ --include="*.ts" --include="*.tsx"
+            
+            # Find localStorage usage (SEC-002)
+            grep -r "localStorage" src/ --include="*.ts" --include="*.tsx"
+            ```
+            
+            Categorize findings:
+            - **SEC-XXX:** Security issues
+            - **QUAL-XXX:** Code quality issues
+            - **PERF-XXX:** Performance issues
+            - **BUG-XXX:** Bugs or incorrect behavior
+            - **TEST-XXX:** Missing or inadequate tests
+            - **SHORTCUT-XXX:** Quick fixes that need proper implementation
+            
+            ## 3. Update TECHNICAL_DEBT.md
+            
+            Structure:
+            ```markdown
+            # Technical Debt Tracker
+            
+            Last Updated: [current date]
+            Total Items: [count]
+            
+            ## Critical (Severity: 9-10)
+            - [ ] SEC-XXX: Description [location] [date added]
+            
+            ## High (Severity: 7-8)
+            ...
+            
+            ## Medium (Severity: 4-6)
+            ...
+            
+            ## Low (Severity: 1-3)
+            ...
+            
+            ## Resolved
+            - [x] SEC-001: Fixed JWT storage - Moved to httpOnly cookies [Resolved: YYYY-MM-DD] [PR #XXX]
+            ```
+            
+            Actions:
+            - Move resolved items to "Resolved" section with date and PR link
+            - Add new items with proper categorization
+            - Update severity if priority changed
+            - Add resolution notes for completed items
+            - Update total count
+            
+            ## 4. Generate Metrics
+            
+            Add to the top of TECHNICAL_DEBT.md:
+            ```markdown
+            ## Metrics
+            - Total Items: X
+            - Critical: X (X%)
+            - High: X (X%)
+            - Medium: X (X%)
+            - Low: X (X%)
+            - Resolved This Week: X
+            - Average Age: X days
+            ```
+            
+            ## 5. Commit Changes
+            
+            If changes were made:
+            ```bash
+            git config user.name "Claude Bot"
+            git config user.email "bot@claude.ai"
+            git add TECHNICAL_DEBT.md
+            git commit -m "chore: Update technical debt tracker [automated]
+            
+            ${{ github.event_name == 'pull_request' && format('- Analyzed PR #{0}', github.event.pull_request.number) || '- Weekly technical debt review' }}
+            - Resolved: [list items]
+            - Added: [list items]
+            - Updated: [list items]
+            "
+            git push
+            ```
+            
+            ## 6. Report Summary
+            
+            ${{ github.event_name == 'pull_request' && format('Comment on PR #{0}:', github.event.pull_request.number) || 'Create summary issue:' }}
+            
+            ${{ github.event_name == 'pull_request' && 'gh pr comment' || 'gh issue create' }} with:
+            ```markdown
+            ## 📊 Technical Debt Update
+            
+            ### Changes in this ${{ github.event_name == 'pull_request' && 'PR' || 'update' }}:
+            - ✅ Resolved: X items
+            - 🆕 Added: X items
+            - 📝 Updated: X items
+            
+            ### Current Status:
+            - Total Debt Items: X
+            - Critical: X
+            - High: X
+            - Medium: X
+            - Low: X
+            
+            ### Top Priorities:
+            1. [Item 1]
+            2. [Item 2]
+            3. [Item 3]
+            
+            See TECHNICAL_DEBT.md for full details.
+            ```
+            
+            QUALITY CHECKS:
+            - Verify no duplicate entries
+            - Ensure all items have proper ID format
+            - Validate severity levels
+            - Check cross-references are valid
+            - Maintain consistent formatting
+          
+          claude_args: '--allowed-tools "Bash(*)"'
