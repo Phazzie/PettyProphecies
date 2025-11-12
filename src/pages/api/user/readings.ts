@@ -1,10 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { authMiddleware } from "../../../middleware/auth"
+import { withAuth } from "../../../middleware/auth.v2"
 import { connectToDatabase } from "../../../utils/database"
+import { ReadingRepository } from "../../../repositories/ReadingRepository"
 import { Reading } from "../../../models/Reading"
+import { sendSuccess, sendError, sendPaginated } from "../../../utils/apiResponse"
+import { DatabaseError, ValidationError } from "../../../interfaces/seams"
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase()
+  const readingRepository = new ReadingRepository()
 
   if (req.method === "GET") {
     try {
@@ -12,30 +16,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const limit = 10
       const skip = (page - 1) * limit
 
-      const readings = await Reading.find({ userId: req.userId })
-        .select("spreadName interpretation rating createdAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
+      const readings = await readingRepository.findByUserId(req.userId!, {
+        skip,
+        limit,
+        sort: { createdAt: -1 }
+      })
 
+      // Count total readings for pagination (using model directly as repository doesn't have count method)
       const total = await Reading.countDocuments({ userId: req.userId })
 
-      res.status(200).json({
-        readings,
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalReadings: total,
-      })
+      // Use sendPaginated helper for consistent paginated response format
+      return sendPaginated(res, readings, total, page, limit)
     } catch (error) {
-      console.error("Error fetching readings:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      res.status(500).json({ message: "Error fetching readings", error: errorMessage })
+      return sendError(res, new DatabaseError(`Error fetching readings: ${errorMessage}`))
     }
   } else {
-    res.status(405).json({ message: "Method not allowed" })
+    return sendError(res, new ValidationError("Method not allowed", "method"), 405)
   }
 }
 
-export default authMiddleware(handler)
+export default withAuth(handler)
 

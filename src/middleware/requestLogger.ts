@@ -7,12 +7,12 @@ export function requestLogger(handler: (req: NextApiRequest, res: NextApiRespons
 
     res.on("finish", () => {
       const duration = Date.now() - start
-      logger.info("Request processed", {
+      logger.info({
         method: req.method,
         url: req.url,
         status: res.statusCode,
         duration: `${duration}ms`,
-      })
+      }, "Request processed")
     })
 
     await handler(req, res)

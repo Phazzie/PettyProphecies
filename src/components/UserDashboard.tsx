@@ -1,5 +1,4 @@
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import type { IReading } from "../models/Reading"
 import { LoadingSpinner } from "./LoadingSpinner"
 
@@ -7,29 +6,25 @@ import { LoadingSpinner } from "./LoadingSpinner"
  * UserDashboard component displays a user's past tarot readings
  * @returns {JSX.Element} The UserDashboard component
  */
-export const UserDashboard: React.FC = () => {
+const UserDashboardComponent: React.FC = () => {
   const [readings, setReadings] = useState<IReading[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    fetchReadings(currentPage)
-  }, [currentPage])
-
   /**
    * Fetches readings for the current page
    * @param {number} page - The page number to fetch
    */
-  const fetchReadings = async (page: number) => {
+  const fetchReadings = useCallback(async (page: number) => {
+    const abortController = new AbortController()
     setIsLoading(true)
     setError("")
     try {
       const response = await fetch(`/api/user/readings?page=${page}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include",
+        signal: abortController.signal,
       })
 
       if (response.ok) {
@@ -39,12 +34,32 @@ export const UserDashboard: React.FC = () => {
       } else {
         setError("Failed to fetch readings")
       }
-    } catch (err) {
-      setError("An error occurred while fetching readings")
+    } catch (err: any) {
+      // Don't set error if request was aborted
+      if (err.name !== 'AbortError') {
+        setError("An error occurred while fetching readings")
+      }
     } finally {
       setIsLoading(false)
     }
-  }
+
+    return () => abortController.abort()
+  }, [])
+
+  useEffect(() => {
+    const cleanup = fetchReadings(currentPage)
+    return () => {
+      cleanup.then(fn => fn && fn())
+    }
+  }, [currentPage, fetchReadings])
+
+  const handlePrevPage = useCallback(() => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1))
+  }, [])
+
+  const handleNextPage = useCallback(() => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+  }, [totalPages])
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
@@ -55,7 +70,7 @@ export const UserDashboard: React.FC = () => {
           <LoadingSpinner size="large" />
         </div>
       ) : readings.length === 0 ? (
-        <p className="text-center text-gray-600 dark:text-gray-400">
+        <p className="text-center text-gray-600 dark:text-gray-600">
           You haven't had any readings yet. Maybe you're avoiding the truth?
         </p>
       ) : (
@@ -66,14 +81,14 @@ export const UserDashboard: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{reading.spreadName}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-600">
                       {new Date(reading.createdAt).toLocaleString()}
                     </p>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{reading.interpretation}</p>
                   </div>
                   {reading.rating && (
                     <div className="mt-2 md:mt-0 flex items-center">
-                      <span className="text-sm text-gray-500 dark:text-gray-400 mr-1">Rating:</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-600 mr-1">Rating:</span>
                       {[1, 2, 3, 4, 5].map((value) => (
                         <svg
                           key={value}
@@ -93,17 +108,17 @@ export const UserDashboard: React.FC = () => {
           </ul>
           <div className="flex justify-between items-center mt-6">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={handlePrevPage}
               disabled={currentPage === 1}
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
             >
               Previous
             </button>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-gray-500 dark:text-gray-600">
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={handleNextPage}
               disabled={currentPage === totalPages}
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
             >
@@ -115,4 +130,6 @@ export const UserDashboard: React.FC = () => {
     </div>
   )
 }
+
+export const UserDashboard = React.memo(UserDashboardComponent)
 

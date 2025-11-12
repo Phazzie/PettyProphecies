@@ -1,54 +1,117 @@
-import { logAnalyzer } from "./logAnalyzer"
+import pino from "pino"
+import type { NextApiRequest } from "next"
 
-type LogLevel = "error" | "warn" | "info" | "debug"
+const isProduction = process.env.NODE_ENV === "production"
+const isTest = process.env.NODE_ENV === "test"
+const logLevel = process.env.LOG_LEVEL || (isProduction ? "info" : "debug")
 
-const LOG_LEVELS: Record<LogLevel, number> = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
+export const logger = pino({
+  level: logLevel,
+  enabled: !isTest, // Disable logger in test environment
+
+  // Pretty print in development
+  ...(!isProduction && {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
+        singleLine: false,
+      },
+    },
+  }),
+
+  // Structured JSON in production
+  ...(isProduction && {
+    formatters: {
+      level: (label) => ({ level: label }),
+      bindings: (bindings) => ({
+        pid: bindings.pid,
+        host: bindings.hostname,
+      }),
+    },
+  }),
+
+  // Redact sensitive fields
+  redact: {
+    paths: [
+      "password",
+      "token",
+      "authorization",
+      "cookie",
+      "req.headers.authorization",
+      "req.headers.cookie",
+    ],
+    remove: true,
+  },
+})
+
+// Helper functions
+export function logRequest(
+  req: NextApiRequest,
+  userId?: string,
+  duration?: number
+) {
+  logger.info({
+    type: "http_request",
+    method: req.method,
+    url: req.url,
+    userId: userId || "anonymous",
+    ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+    userAgent: req.headers["user-agent"],
+    duration,
+  })
 }
 
-const currentLevel: LogLevel = (process.env.LOG_LEVEL as LogLevel) || "info"
-const currentLevelValue = LOG_LEVELS[currentLevel]
-
-function formatLog(level: LogLevel, message: string, meta?: any): string {
-  const timestamp = new Date().toISOString()
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : ""
-  return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`
+export function logError(error: Error, context?: Record<string, any>) {
+  logger.error({
+    type: "error",
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    ...context,
+  })
 }
 
-function shouldLog(level: LogLevel): boolean {
-  return LOG_LEVELS[level] <= currentLevelValue
+export function logAuth(
+  action: "login" | "register" | "logout",
+  userId: string,
+  success: boolean,
+  reason?: string
+) {
+  logger.info({
+    type: "auth",
+    action,
+    userId,
+    success,
+    reason,
+  })
 }
 
-// Simple console-based logger for Next.js
-const wrappedLogger = {
-  error: (message: string, meta?: any) => {
-    if (shouldLog("error")) {
-      logAnalyzer.analyzeLog("error", message, meta)
-      console.error(formatLog("error", message, meta))
-    }
-  },
-  warn: (message: string, meta?: any) => {
-    if (shouldLog("warn")) {
-      logAnalyzer.analyzeLog("warn", message, meta)
-      console.warn(formatLog("warn", message, meta))
-    }
-  },
-  info: (message: string, meta?: any) => {
-    if (shouldLog("info")) {
-      logAnalyzer.analyzeLog("info", message, meta)
-      console.info(formatLog("info", message, meta))
-    }
-  },
-  debug: (message: string, meta?: any) => {
-    if (shouldLog("debug")) {
-      logAnalyzer.analyzeLog("debug", message, meta)
-      console.debug(formatLog("debug", message, meta))
-    }
-  },
+export function logDatabase(
+  operation: string,
+  collection: string,
+  duration: number,
+  success: boolean
+) {
+  if (duration > 100) {
+    logger.warn({
+      type: "slow_query",
+      operation,
+      collection,
+      duration,
+    })
+  } else {
+    logger.debug({
+      type: "database",
+      operation,
+      collection,
+      duration,
+      success,
+    })
+  }
 }
 
-export default wrappedLogger
+export default logger
 

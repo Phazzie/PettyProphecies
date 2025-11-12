@@ -1,20 +1,42 @@
 import { renderHook, act } from "@testing-library/react"
-import { useApiRequest } from "@/src/hooks/useApiRequest"
 import { jest } from "@jest/globals"
 
-// Mock fetch
-global.fetch = jest.fn()
+// Mock dependencies BEFORE importing the hook
+jest.mock("@/src/hooks/useCSRFToken", () => ({
+  useCSRFToken: () => ({
+    csrfToken: "test-token",
+    loading: false,
+    error: null,
+  }),
+}))
+
+jest.mock("@/src/utils/apiErrorHandler", () => ({
+  handleApiError: jest.fn(),
+  ApiError: Error,
+}))
+
+jest.mock("@/src/utils/sentry", () => ({
+  captureException: jest.fn(),
+}))
+
+// Now import after mocks are set up
+import { useApiRequest } from "@/src/hooks/useApiRequest"
+
+// Ensure fetch mock is available
+const mockFetch = global.fetch as jest.Mock
 
 describe("useApiRequest", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    mockFetch.mockClear()
   })
 
   test("should make a successful request", async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: "test" }),
-    })
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data: "test" }),
+      })
+    )
 
     const { result } = renderHook(() => useApiRequest())
 
@@ -28,10 +50,13 @@ describe("useApiRequest", () => {
   })
 
   test("should handle API errors", async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-    })
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({}),
+      })
+    )
 
     const { result } = renderHook(() => useApiRequest())
 

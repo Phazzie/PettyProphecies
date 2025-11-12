@@ -3,7 +3,19 @@ import { errorHandler } from "../../src/middleware/errorHandler"
 import { ApiError, ValidationError, AuthenticationError, DatabaseError } from "../../src/types/errors"
 import logger from "../../src/utils/logger"
 
-jest.mock("../../src/utils/logger")
+jest.mock("../../src/utils/logger", () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+}))
 
 describe("Error Handler Middleware", () => {
   it("should handle ApiError correctly", async () => {

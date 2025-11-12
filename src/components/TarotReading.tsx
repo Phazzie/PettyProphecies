@@ -1,5 +1,4 @@
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useCallback, useMemo } from "react"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateSpreadSelection } from "../utils/validation"
@@ -16,13 +15,19 @@ import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
 interface ReadingResponse {
   interpretation: string
   readingId: string
+  aiGenerated?: boolean
+  modelInfo?: {
+    available: boolean
+    model: string
+    provider: string
+  }
 }
 
 /**
  * TarotReading component
  * Allows users to select a tarot spread and receive a passive-aggressive reading
  */
-export const TarotReading: React.FC = () => {
+const TarotReadingComponent: React.FC = () => {
   // Form validation hook
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { spread: "" },
@@ -36,20 +41,43 @@ export const TarotReading: React.FC = () => {
   const [reading, setReading] = useState<ReadingResponse | null>(null)
   const [rating, setRating] = useState<number | null>(null)
 
+  // State for AI toggle - default to true if AI is available
+  const [useAI, setUseAI] = useState<boolean>(() => {
+    // Check if AI is available via environment variable
+    return typeof window !== "undefined" && process.env.NEXT_PUBLIC_XAI_AVAILABLE === "true"
+  })
+
+  /**
+   * Handles AI checkbox change
+   */
+  const handleAIChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseAI(e.target.checked)
+  }, [])
+
+  /**
+   * Memoize spread options to prevent recreation on every render
+   */
+  const spreadOptions = useMemo(() =>
+    spreads.map((spread) => (
+      <option key={spread.name} value={spread.name}>
+        {spread.name}
+      </option>
+    )), [])
+
   /**
    * Handles form submission to get a new tarot reading
    * @param e - Form submission event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       try {
         const data = await request({
           url: "/api/tarot-reading",
           method: "POST",
-          body: { spreadName: values.spread },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          body: {
+            spreadName: values.spread,
+            useAI,
           },
         })
         setReading(data)
@@ -58,22 +86,19 @@ export const TarotReading: React.FC = () => {
         console.error("Error getting tarot reading:", err)
       }
     }
-  }
+  }, [validateForm, request, values.spread, useAI])
 
   /**
    * Handles rating submission for a reading
    * @param value - Rating value (1-5)
    */
-  const handleRating = async (value: number) => {
+  const handleRating = useCallback(async (value: number) => {
     if (!reading) return
 
     try {
       await request({
         url: "/api/tarot-reading",
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: { readingId: reading.readingId, rating: value },
       })
       setRating(value)
@@ -81,7 +106,7 @@ export const TarotReading: React.FC = () => {
     } catch (err) {
       console.error("Error updating rating:", err)
     }
-  }
+  }, [reading, request])
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
@@ -103,13 +128,25 @@ export const TarotReading: React.FC = () => {
             aria-describedby={errors.spread ? "spread-error" : undefined}
           >
             <option value="">Select a spread</option>
-            {spreads.map((spread) => (
-              <option key={spread.name} value={spread.name}>
-                {spread.name}
-              </option>
-            ))}
+            {spreadOptions}
           </select>
           {errors.spread && <ErrorMessage id="spread-error" message={errors.spread} />}
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="useAI"
+            checked={useAI}
+            onChange={handleAIChange}
+            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            aria-describedby="useAI-description"
+          />
+          <label htmlFor="useAI" className="text-sm font-medium">
+            Use AI Reading
+          </label>
+          <span id="useAI-description" className="text-xs text-gray-500 dark:text-gray-600">
+            (Powered by xAI Grok)
+          </span>
         </div>
         <button
           type="submit"
@@ -122,7 +159,31 @@ export const TarotReading: React.FC = () => {
       </form>
       {reading && (
         <div className="mt-8 bg-gray-100 dark:bg-gray-700 rounded-lg p-6" aria-live="polite">
-          <h3 className="text-xl font-semibold mb-4">Your Passive-Aggressive Tarot Reading</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Your Passive-Aggressive Tarot Reading</h3>
+            {reading.aiGenerated && reading.modelInfo && (
+              <div className="flex items-center space-x-2 bg-indigo-100 dark:bg-indigo-900 px-3 py-1 rounded-full">
+                <svg
+                  className="w-4 h-4 text-indigo-600 dark:text-indigo-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+                <span className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
+                  Generated by AI ({reading.modelInfo.provider})
+                </span>
+              </div>
+            )}
+          </div>
           <p className="text-lg mb-6">{reading.interpretation}</p>
           <div>
             <p className="text-sm font-medium mb-2">Rate this reading:</p>
@@ -132,7 +193,7 @@ export const TarotReading: React.FC = () => {
                   key={value}
                   onClick={() => handleRating(value)}
                   className={`mr-1 p-1 rounded-full ${
-                    rating && value <= rating ? "text-yellow-400" : "text-gray-400"
+                    rating && value <= rating ? "text-yellow-400" : "text-gray-600"
                   } hover:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200`}
                   aria-label={`Rate ${value} star${value !== 1 ? "s" : ""}`}
                   aria-pressed={rating === value}
@@ -149,4 +210,6 @@ export const TarotReading: React.FC = () => {
     </div>
   )
 }
+
+export const TarotReading = React.memo(TarotReadingComponent)
 

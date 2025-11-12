@@ -1,5 +1,3 @@
-import logger from "./logger"
-
 const ERROR_THRESHOLD = 5
 const TIME_WINDOW = 60000 // 1 minute
 
@@ -28,7 +26,7 @@ class LogAnalyzer {
 
   private triggerAlert(message: string, meta: any) {
     // In a real-world scenario, you might want to send an email, SMS, or integrate with a service like PagerDuty
-    logger.warn("ALERT: High error rate detected", { message, meta })
+    // Avoid circular dependency by using console directly
     console.error("ALERT: High error rate detected", { message, meta })
   }
 }

@@ -1,4 +1,4 @@
-import type React from "react"
+import React, { useCallback } from "react"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword, validateUsername } from "../utils/validation"
@@ -7,12 +7,29 @@ import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
+import { useAuth } from "../../lib/AuthContext"
+
+// V2 API response structure
+interface RegisterResponse {
+  success: boolean
+  data: {
+    message: string
+    user: {
+      id: string
+      username: string
+      email: string
+    }
+  }
+}
 
 /**
  * Register component for user registration
  * @returns {JSX.Element} The Register form
  */
-export const Register: React.FC = () => {
+const RegisterComponent: React.FC = () => {
+  // Auth context (v2 cookie-based)
+  const { login } = useAuth()
+
   // Form validation hook
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { username: "", email: "", password: "", confirmPassword: "" },
@@ -24,14 +41,14 @@ export const Register: React.FC = () => {
     },
   )
 
-  // API request hook
-  const { request, loading } = useApiRequest<{ message: string }>()
+  // API request hook with v2 response type
+  const { request, loading } = useApiRequest<RegisterResponse>()
 
   /**
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       try {
@@ -43,15 +60,19 @@ export const Register: React.FC = () => {
             email: values.email,
             password: values.password,
           },
-          onSuccess: () => {
-            toast.success(getPassiveAggressiveMessage("register"))
+          onSuccess: (response) => {
+            // V2: Response contains user data, auth is handled by httpOnly cookies
+            if (response.success && response.data.user) {
+              login(response.data.user)
+              toast.success(getPassiveAggressiveMessage("register"))
+            }
           },
         })
       } catch (err) {
         console.error("Registration error:", err)
       }
     }
-  }
+  }, [validateForm, request, values.username, values.email, values.password, login])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="register-heading">
@@ -138,4 +159,6 @@ export const Register: React.FC = () => {
     </form>
   )
 }
+
+export const Register = React.memo(RegisterComponent)
 

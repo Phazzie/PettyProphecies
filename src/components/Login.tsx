@@ -1,6 +1,5 @@
-import type React from "react"
-import { useState } from "react"
-import { useAuth } from "../contexts/AuthContext"
+import React, { useState, useCallback } from "react"
+import { useAuth } from "@/lib/AuthContext"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword } from "../utils/validation"
@@ -15,13 +14,16 @@ import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
  * Login component for user authentication
  * @returns {JSX.Element} The Login form
  */
-export const Login: React.FC = () => {
+const LoginComponent: React.FC = () => {
   const { login } = useAuth()
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { email: "", password: "" },
     { email: validateEmail, password: validatePassword },
   )
-  const { request, loading } = useApiRequest<{ token: string }>()
+  const { request, loading } = useApiRequest<{
+    success: boolean
+    data: { message: string; user: { id: string; username: string; email: string } }
+  }>()
   const [success, setSuccess] = useState(false)
 
   // const errorRef = useFocusError(Object.values(errors).find(Boolean) || null)
@@ -30,7 +32,7 @@ export const Login: React.FC = () => {
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       setSuccess(false)
@@ -39,17 +41,20 @@ export const Login: React.FC = () => {
           url: "/api/auth/login",
           method: "POST",
           body: values,
-          onSuccess: (data: { token: string }) => {
-            login(data.token)
-            toast.success(getPassiveAggressiveMessage("login"))
-            setSuccess(true)
+          onSuccess: (response) => {
+            if (response.success && response.data.user) {
+              // Auth is now handled by httpOnly cookies, no localStorage needed
+              login(response.data.user)
+              toast.success(getPassiveAggressiveMessage("login"))
+              setSuccess(true)
+            }
           },
         })
       } catch (err) {
         console.error("Login error:", err)
       }
     }
-  }
+  }, [validateForm, request, values, login])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="login-heading">
@@ -107,4 +112,6 @@ export const Login: React.FC = () => {
     </form>
   )
 }
+
+export const Login = React.memo(LoginComponent)
 

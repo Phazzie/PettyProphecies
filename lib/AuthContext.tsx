@@ -3,35 +3,67 @@
 import type React from "react"
 import { createContext, useState, useContext, useEffect } from "react"
 
+interface User {
+  id: string
+  username: string
+  email: string
+}
+
 interface AuthContextType {
-  isAuthenticated: boolean
-  login: (token: string) => void
+  user: User | null
+  login: (user: User) => void
   logout: () => void
+  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (token) {
-      setIsAuthenticated(true)
+    // Verify session on mount by calling an endpoint
+    const verifySession = async () => {
+      try {
+        const response = await fetch('/api/auth/verify', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data.user) {
+            setUser(data.data.user)
+          }
+        }
+      } catch (error) {
+        console.error('Session verification failed:', error)
+      }
     }
+    verifySession()
   }, [])
 
-  const login = (token: string) => {
-    localStorage.setItem("token", token)
-    setIsAuthenticated(true)
+  const login = (user: User) => {
+    setUser(user)
+    // No localStorage! Auth is in httpOnly cookie
   }
 
-  const logout = () => {
-    localStorage.removeItem("token")
-    setIsAuthenticated(false)
+  const logout = async () => {
+    // Call logout API to clear httpOnly cookie
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+    setUser(null)
   }
 
-  return <AuthContext.Provider value={{ isAuthenticated, login, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export const useAuth = () => {
