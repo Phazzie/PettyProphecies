@@ -1,6 +1,11 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
+// Set test environment variables
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing'
+process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test'
+process.env.NODE_ENV = process.env.NODE_ENV || 'test'
+
 // Polyfill fetch for jsdom environment
 global.fetch = jest.fn()
 global.Request = jest.fn()
@@ -113,26 +118,71 @@ jest.mock('mongoose', () => {
       }) || null
     }
 
-    static async find(filter) {
-      if (!this._documents) return []
-      if (Object.keys(filter).length === 0) return this._documents
+    static find(filter = {}) {
+      const documents = !this._documents ? [] : this._documents
 
-      return this._documents.filter(doc => {
-        for (const [key, value] of Object.entries(filter)) {
-          // Handle special operators like $lt
-          if (typeof value === 'object' && value !== null) {
-            for (const [op, opValue] of Object.entries(value)) {
-              if (op === '$lt' && doc[key] >= opValue) return false
-              if (op === '$gt' && doc[key] <= opValue) return false
-              if (op === '$lte' && doc[key] > opValue) return false
-              if (op === '$gte' && doc[key] < opValue) return false
+      let filtered = documents
+      if (filter && Object.keys(filter).length > 0) {
+        filtered = documents.filter(doc => {
+          for (const [key, value] of Object.entries(filter)) {
+            // Handle special operators like $lt
+            if (typeof value === 'object' && value !== null) {
+              for (const [op, opValue] of Object.entries(value)) {
+                if (op === '$lt' && doc[key] >= opValue) return false
+                if (op === '$gt' && doc[key] <= opValue) return false
+                if (op === '$lte' && doc[key] > opValue) return false
+                if (op === '$gte' && doc[key] < opValue) return false
+              }
+            } else if (doc[key] !== value) {
+              return false
             }
-          } else if (doc[key] !== value) {
-            return false
+          }
+          return true
+        })
+      }
+
+      // Return a chainable and awaitable object
+      const query = {
+        data: filtered,
+        sort(sortObj) {
+          if (sortObj.createdAt === -1) {
+            this.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          } else if (sortObj.createdAt === 1) {
+            this.data.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+          }
+          return this
+        },
+        limit(count) {
+          this.data = this.data.slice(0, count)
+          return this
+        },
+        lean() {
+          return this.data
+        },
+        async exec() {
+          return this.data
+        },
+        // Make the query awaitable (thenable)
+        then(onFulfilled, onRejected) {
+          return Promise.resolve(this.data).then(onFulfilled, onRejected)
+        },
+        catch(onRejected) {
+          return Promise.resolve(this.data).catch(onRejected)
+        },
+        [Symbol.asyncIterator]() {
+          let index = 0
+          return {
+            next: () => {
+              if (index < this.data.length) {
+                return Promise.resolve({ value: this.data[index++], done: false })
+              } else {
+                return Promise.resolve({ done: true })
+              }
+            }
           }
         }
-        return true
-      })
+      }
+      return query
     }
 
     static async create(data) {
@@ -152,13 +202,38 @@ jest.mock('mongoose', () => {
     }
 
     static get collection() {
-      return {
-        getIndexes: jest.fn().mockResolvedValue({
-          _id_: [['_id', 1]],
+      const modelName = this._modelName
+      let indexes = {
+        _id_: [['_id', 1]],
+      }
+
+      // Return model-specific indexes
+      if (modelName === 'User') {
+        indexes = {
+          ...indexes,
+          email_1: [['email', 1]],
+          username_1: [['username', 1]],
+          createdAt_1: [['createdAt', 1]],
+        }
+      } else if (modelName === 'Reading') {
+        indexes = {
+          ...indexes,
+          ['userId_1_createdAt_-1']: [['userId', 1], ['createdAt', -1]],
+          createdAt_1: [['createdAt', 1]],
+          rating_1: [['rating', 1]],
+        }
+      } else if (modelName === 'PasswordReset') {
+        indexes = {
+          ...indexes,
+          userId_1: [['userId', 1]],
           token_1: [['token', 1]],
           expiresAt_1: [['expiresAt', 1]],
-          userId_1: [['userId', 1]],
-        })
+          createdAt_1: [['createdAt', 1]],
+        }
+      }
+
+      return {
+        getIndexes: jest.fn().mockResolvedValue(indexes)
       }
     }
   }
@@ -170,6 +245,7 @@ jest.mock('mongoose', () => {
     const ModelClass = class extends MockModel {}
     ModelClass._schema = schema
     ModelClass._documents = []
+    ModelClass._modelName = name
     return ModelClass
   }
 
@@ -179,6 +255,12 @@ jest.mock('mongoose', () => {
       close: jest.fn().mockResolvedValue({}),
       dropDatabase: jest.fn().mockResolvedValue({}),
       readyState: 1,
+      client: {
+        topology: {
+          maxPoolSize: 10,
+          minPoolSize: 2,
+        },
+      },
     },
     model: jest.fn((name, schema) => {
       if (!mock.models[name]) {

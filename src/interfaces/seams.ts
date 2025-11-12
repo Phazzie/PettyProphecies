@@ -334,8 +334,7 @@ export class RateLimitError extends Error {
 
   constructor(
     message: string = "Too many requests",
-    resetAtOrRetryAfter?: Date | number,
-    retryAfter?: number
+    resetAtOrRetryAfter?: Date | number
   ) {
     super(message)
     this.name = "RateLimitError"
@@ -343,10 +342,8 @@ export class RateLimitError extends Error {
     // Smart parameter handling: second param can be either Date or number
     if (resetAtOrRetryAfter instanceof Date) {
       this.resetAt = resetAtOrRetryAfter
-      this.retryAfter = retryAfter
     } else if (typeof resetAtOrRetryAfter === "number") {
       this.retryAfter = resetAtOrRetryAfter
-      this.resetAt = retryAfter instanceof Date ? retryAfter : undefined
     }
   }
 }

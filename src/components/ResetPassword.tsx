@@ -5,8 +5,7 @@
  * Following existing UI patterns from Login/Register components
  */
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/router"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validatePassword } from "../utils/validation"
@@ -40,7 +39,7 @@ function getPasswordStrength(password: string): "weak" | "medium" | "strong" {
  * ResetPassword form component
  * @returns {JSX.Element} The ResetPassword form
  */
-export const ResetPassword: React.FC = () => {
+const ResetPasswordComponent: React.FC = () => {
   const router = useRouter()
   const { token } = router.query
   const [password, setPassword] = useState("")
@@ -61,7 +60,7 @@ export const ResetPassword: React.FC = () => {
   /**
    * Handles password input change
    */
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setPassword(value)
     setPasswordStrength(getPasswordStrength(value))
@@ -70,12 +69,12 @@ export const ResetPassword: React.FC = () => {
     if (passwordError) {
       setPasswordError("")
     }
-  }
+  }, [passwordError])
 
   /**
    * Handles confirm password input change
    */
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConfirmPasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setConfirmPassword(value)
 
@@ -83,12 +82,12 @@ export const ResetPassword: React.FC = () => {
     if (confirmPasswordError) {
       setConfirmPasswordError("")
     }
-  }
+  }, [confirmPasswordError])
 
   /**
    * Validates the form
    */
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     let isValid = true
 
     // Validate password
@@ -112,13 +111,13 @@ export const ResetPassword: React.FC = () => {
     }
 
     return isValid
-  }
+  }, [password, confirmPassword])
 
   /**
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!token) {
@@ -146,7 +145,23 @@ export const ResetPassword: React.FC = () => {
         console.error("Reset password error:", err)
       }
     }
-  }
+  }, [token, validate, password, request, router])
+
+  const handleRequestNewLink = useCallback(() => {
+    router.push("/forgot-password")
+  }, [router])
+
+  const strengthColors = useMemo(() => ({
+    weak: "bg-red-500",
+    medium: "bg-yellow-500",
+    strong: "bg-green-500",
+  }), [])
+
+  const strengthWidth = useMemo(() => ({
+    weak: "w-1/3",
+    medium: "w-2/3",
+    strong: "w-full",
+  }), [])
 
   // Show token error if no token
   if (tokenError) {
@@ -157,25 +172,13 @@ export const ResetPassword: React.FC = () => {
           <p className="text-red-800">{tokenError}</p>
         </div>
         <button
-          onClick={() => router.push("/forgot-password")}
+          onClick={handleRequestNewLink}
           className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
         >
           Request New Reset Link
         </button>
       </div>
     )
-  }
-
-  const strengthColors = {
-    weak: "bg-red-500",
-    medium: "bg-yellow-500",
-    strong: "bg-green-500",
-  }
-
-  const strengthWidth = {
-    weak: "w-1/3",
-    medium: "w-2/3",
-    strong: "w-full",
   }
 
   return (
@@ -261,3 +264,5 @@ export const ResetPassword: React.FC = () => {
     </form>
   )
 }
+
+export const ResetPassword = React.memo(ResetPasswordComponent)

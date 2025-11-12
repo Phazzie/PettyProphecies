@@ -1,5 +1,4 @@
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useCallback, useMemo } from "react"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateSpreadSelection } from "../utils/validation"
@@ -28,7 +27,7 @@ interface ReadingResponse {
  * TarotReading component
  * Allows users to select a tarot spread and receive a passive-aggressive reading
  */
-export const TarotReading: React.FC = () => {
+const TarotReadingComponent: React.FC = () => {
   // Form validation hook
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { spread: "" },
@@ -49,10 +48,27 @@ export const TarotReading: React.FC = () => {
   })
 
   /**
+   * Handles AI checkbox change
+   */
+  const handleAIChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setUseAI(e.target.checked)
+  }, [])
+
+  /**
+   * Memoize spread options to prevent recreation on every render
+   */
+  const spreadOptions = useMemo(() =>
+    spreads.map((spread) => (
+      <option key={spread.name} value={spread.name}>
+        {spread.name}
+      </option>
+    )), [])
+
+  /**
    * Handles form submission to get a new tarot reading
    * @param e - Form submission event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       try {
@@ -70,13 +86,13 @@ export const TarotReading: React.FC = () => {
         console.error("Error getting tarot reading:", err)
       }
     }
-  }
+  }, [validateForm, request, values.spread, useAI])
 
   /**
    * Handles rating submission for a reading
    * @param value - Rating value (1-5)
    */
-  const handleRating = async (value: number) => {
+  const handleRating = useCallback(async (value: number) => {
     if (!reading) return
 
     try {
@@ -90,7 +106,7 @@ export const TarotReading: React.FC = () => {
     } catch (err) {
       console.error("Error updating rating:", err)
     }
-  }
+  }, [reading, request])
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
@@ -112,11 +128,7 @@ export const TarotReading: React.FC = () => {
             aria-describedby={errors.spread ? "spread-error" : undefined}
           >
             <option value="">Select a spread</option>
-            {spreads.map((spread) => (
-              <option key={spread.name} value={spread.name}>
-                {spread.name}
-              </option>
-            ))}
+            {spreadOptions}
           </select>
           {errors.spread && <ErrorMessage id="spread-error" message={errors.spread} />}
         </div>
@@ -125,14 +137,14 @@ export const TarotReading: React.FC = () => {
             type="checkbox"
             id="useAI"
             checked={useAI}
-            onChange={(e) => setUseAI(e.target.checked)}
+            onChange={handleAIChange}
             className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600"
             aria-describedby="useAI-description"
           />
           <label htmlFor="useAI" className="text-sm font-medium">
             Use AI Reading
           </label>
-          <span id="useAI-description" className="text-xs text-gray-500 dark:text-gray-400">
+          <span id="useAI-description" className="text-xs text-gray-500 dark:text-gray-600">
             (Powered by xAI Grok)
           </span>
         </div>
@@ -181,7 +193,7 @@ export const TarotReading: React.FC = () => {
                   key={value}
                   onClick={() => handleRating(value)}
                   className={`mr-1 p-1 rounded-full ${
-                    rating && value <= rating ? "text-yellow-400" : "text-gray-400"
+                    rating && value <= rating ? "text-yellow-400" : "text-gray-600"
                   } hover:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200`}
                   aria-label={`Rate ${value} star${value !== 1 ? "s" : ""}`}
                   aria-pressed={rating === value}
@@ -198,4 +210,6 @@ export const TarotReading: React.FC = () => {
     </div>
   )
 }
+
+export const TarotReading = React.memo(TarotReadingComponent)
 

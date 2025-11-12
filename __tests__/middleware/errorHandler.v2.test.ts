@@ -263,12 +263,13 @@ describe("Error Handler v2 Middleware", () => {
 
       await errorHandler(handler)(req, res)
 
+      // Pino signature: logger.warn(object, message)
       expect(logger.warn).toHaveBeenCalledWith(
-        "Validation error",
         expect.objectContaining({
           error: "Invalid input",
           field: undefined,
-        })
+        }),
+        "Validation error"
       )
     })
 
@@ -283,11 +284,12 @@ describe("Error Handler v2 Middleware", () => {
 
       await errorHandler(handler)(req, res)
 
+      // Pino signature: logger.warn(object, message)
       expect(logger.warn).toHaveBeenCalledWith(
-        "Authentication error",
         expect.objectContaining({
           error: "Invalid credentials",
-        })
+        }),
+        "Authentication error"
       )
     })
 
@@ -302,12 +304,13 @@ describe("Error Handler v2 Middleware", () => {
 
       await errorHandler(handler)(req, res)
 
+      // Pino signature: logger.error(object, message)
       expect(logger.error).toHaveBeenCalledWith(
-        "Unhandled error",
         expect.objectContaining({
           error: "Database connection failed",
           stack: expect.stringContaining("Database connection failed"),
-        })
+        }),
+        "Unhandled error"
       )
     })
   })

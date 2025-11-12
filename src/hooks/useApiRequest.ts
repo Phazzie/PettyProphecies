@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { ApiError, handleApiError } from "../utils/apiErrorHandler"
 import { useCSRFToken } from "./useCSRFToken"
 
@@ -14,6 +14,16 @@ export const useApiRequest = <T>() => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const { csrfToken } = useCSRFToken();
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup function to abort ongoing requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const request = useCallback(async ({
     url,
@@ -22,6 +32,15 @@ export const useApiRequest = <T>() => {
     headers = {},
     onSuccess
   }: ApiRequestOptions<T>) => {
+    // Abort any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     setLoading(true);
     setError(null);
 
@@ -35,6 +54,7 @@ export const useApiRequest = <T>() => {
         },
         body: body ? JSON.stringify(body) : undefined,
         credentials: 'include', // Include cookies for authentication
+        signal, // Add abort signal
       });
 
       if (!response.ok) {
@@ -51,6 +71,11 @@ export const useApiRequest = <T>() => {
 
       return data;
     } catch (e) {
+      // Don't set error state if request was aborted
+      if ((e as Error).name === 'AbortError') {
+        return;
+      }
+
       const apiError = e as ApiError;
       // Ensure error has a status code
       if (!apiError.status) {

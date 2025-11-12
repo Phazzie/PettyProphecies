@@ -1,4 +1,4 @@
-import type React from "react"
+import React, { useCallback } from "react"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword, validateUsername } from "../utils/validation"
@@ -26,7 +26,7 @@ interface RegisterResponse {
  * Register component for user registration
  * @returns {JSX.Element} The Register form
  */
-export const Register: React.FC = () => {
+const RegisterComponent: React.FC = () => {
   // Auth context (v2 cookie-based)
   const { login } = useAuth()
 
@@ -48,7 +48,7 @@ export const Register: React.FC = () => {
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       try {
@@ -72,7 +72,7 @@ export const Register: React.FC = () => {
         console.error("Registration error:", err)
       }
     }
-  }
+  }, [validateForm, request, values.username, values.email, values.password, login])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="register-heading">
@@ -159,4 +159,6 @@ export const Register: React.FC = () => {
     </form>
   )
 }
+
+export const Register = React.memo(RegisterComponent)
 

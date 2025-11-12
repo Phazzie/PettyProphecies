@@ -40,12 +40,15 @@ function getIdentifier(req: NextApiRequest): string {
  */
 function isStrongPassword(password: string): boolean {
   // At least 8 characters, one uppercase, one lowercase, one number
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/
+  // Allow any characters including special characters
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
   return passwordRegex.test(password)
 }
 
 /**
  * Core handler function with dependency injection for testing
+ * Note: CSRF and rate limiting are NOT in this function to allow testing
+ * They are applied in the main handler function below
  */
 export async function resetPasswordHandler(
   req: NextApiRequest,
@@ -62,22 +65,6 @@ export async function resetPasswordHandler(
       },
     })
   }
-
-  // Rate limiting
-  const identifier = getIdentifier(req)
-  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
-  setRateLimitHeaders(res, rateLimitResult)
-
-  if (!rateLimitResult.allowed) {
-    throw new RateLimitError(
-      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
-      rateLimitResult.retryAfter
-    )
-  }
-
-  // Validate CSRF token
-  const csrfService = getCSRFService()
-  await csrfService.validateToken(req)
 
   const { token, password } = req.body
 
@@ -137,8 +124,23 @@ export async function resetPasswordHandler(
  * Main API handler with dependencies injected from real implementations
  */
 async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
+  // Rate limiting
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
+  // Validate CSRF token (only for non-test requests)
+  const csrfService = getCSRFService()
+  await csrfService.validateToken(req)
+
   // Import dependencies
-  // These will be provided by Agent 4
   const { UserRepository } = await import("../../../repositories/UserRepository")
   const { PasswordResetRepository } = await import("../../../repositories/PasswordResetRepository")
 

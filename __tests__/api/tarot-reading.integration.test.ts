@@ -87,8 +87,30 @@ jest.mock("@/src/middleware/requestLogger", () => ({
   requestLogger: (handler: any) => handler,
 }))
 
-jest.mock("@/src/middleware/rateLimit", () => ({
-  rateLimitMiddleware: (handler: any) => handler,
+// Mock rate limiter v2 (the API uses v2)
+jest.mock("@/src/middleware/rateLimit.v2", () => ({
+  getRateLimiter: jest.fn().mockReturnValue({
+    checkLimit: jest.fn().mockResolvedValue({
+      allowed: true,
+      remaining: 10,
+      resetTime: Date.now() + 60000,
+    }),
+  }),
+  setRateLimitHeaders: jest.fn(),
+  RateLimitError: class RateLimitError extends Error {
+    constructor(message: string, public retryAfter?: number) {
+      super(message)
+      this.name = "RateLimitError"
+    }
+  },
+}))
+
+// Mock CSRF service to pass through
+jest.mock("@/src/middleware/csrf", () => ({
+  getCSRFService: jest.fn().mockReturnValue({
+    validateToken: jest.fn().mockResolvedValue(undefined),
+    generateToken: jest.fn().mockResolvedValue("mock-csrf-token"),
+  }),
 }))
 
 // Import handler after all mocks

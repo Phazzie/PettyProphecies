@@ -35,7 +35,7 @@ export async function generateAIReading(options: AIReadingOptions): Promise<stri
 
   // Fallback to template if AI not available
   if (!xai) {
-    logger.warn("xAI not configured, using template reading")
+    console.warn("xAI not configured, using template reading")
     return spread.interpret(cards)
   }
 
@@ -111,7 +111,7 @@ Write the reading now. Be snarky, be insightful, be memorable.`
 
     return text
   } catch (error) {
-    logger.error({ error }, "AI reading generation failed")
+    console.error("AI reading generation failed:", error)
     // Fallback to template reading
     return spread.interpret(cards)
   }

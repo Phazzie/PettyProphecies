@@ -1,5 +1,4 @@
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useCallback } from "react"
 import { useAuth } from "@/lib/AuthContext"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
@@ -15,7 +14,7 @@ import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
  * Login component for user authentication
  * @returns {JSX.Element} The Login form
  */
-export const Login: React.FC = () => {
+const LoginComponent: React.FC = () => {
   const { login } = useAuth()
   const { values, errors, isValid, handleChange, validateForm } = useFormValidation(
     { email: "", password: "" },
@@ -33,7 +32,7 @@ export const Login: React.FC = () => {
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
       setSuccess(false)
@@ -55,7 +54,7 @@ export const Login: React.FC = () => {
         console.error("Login error:", err)
       }
     }
-  }
+  }, [validateForm, request, values, login])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="login-heading">
@@ -113,4 +112,6 @@ export const Login: React.FC = () => {
     </form>
   )
 }
+
+export const Login = React.memo(LoginComponent)
 

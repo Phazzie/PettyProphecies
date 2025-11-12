@@ -38,7 +38,7 @@ async function fetchCSRFToken(): Promise<string> {
       if (data.success && data.data.csrfToken) {
         cachedToken = data.data.csrfToken
         cachedTokenTimestamp = Date.now()
-        return cachedToken
+        return cachedToken!
       }
 
       throw new Error('Invalid CSRF token response')

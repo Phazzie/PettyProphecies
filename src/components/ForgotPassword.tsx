@@ -5,8 +5,7 @@
  * Following existing UI patterns from Login/Register components
  */
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useCallback, useMemo } from "react"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail } from "../utils/validation"
 import { ErrorAnnouncer } from "./ErrorAnnouncer"
@@ -17,7 +16,7 @@ import { LoadingSpinner } from "./LoadingSpinner"
  * ForgotPassword form component
  * @returns {JSX.Element} The ForgotPassword form
  */
-export const ForgotPassword: React.FC = () => {
+const ForgotPasswordComponent: React.FC = () => {
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
   const { request, loading, error } = useApiRequest<{ message: string }>()
@@ -28,7 +27,7 @@ export const ForgotPassword: React.FC = () => {
   /**
    * Handles email input change
    */
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setEmail(value)
 
@@ -36,12 +35,12 @@ export const ForgotPassword: React.FC = () => {
     if (emailError) {
       setEmailError("")
     }
-  }
+  }, [emailError])
 
   /**
    * Validates the form
    */
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     if (!email || email.trim() === "") {
       setEmailError("Email is required")
       return false
@@ -53,13 +52,13 @@ export const ForgotPassword: React.FC = () => {
     }
 
     return true
-  }
+  }, [email])
 
   /**
    * Handles form submission
    * @param {React.FormEvent} e - The form event
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (validate()) {
@@ -100,9 +99,9 @@ export const ForgotPassword: React.FC = () => {
         setApiError(errorMessage)
       }
     }
-  }
+  }, [validate, email, request])
 
-  const isValid = !emailError && email.trim() !== ""
+  const isValid = useMemo(() => !emailError && email.trim() !== "", [emailError, email])
 
   return (
     <form
@@ -159,3 +158,5 @@ export const ForgotPassword: React.FC = () => {
     </form>
   )
 }
+
+export const ForgotPassword = React.memo(ForgotPasswordComponent)

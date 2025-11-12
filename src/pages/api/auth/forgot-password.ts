@@ -44,6 +44,8 @@ function isValidEmail(email: string): boolean {
 
 /**
  * Core handler function with dependency injection for testing
+ * Note: CSRF and rate limiting are NOT in this function to allow testing
+ * They are applied in the main handler function below
  */
 export async function forgotPasswordHandler(
   req: NextApiRequest,
@@ -61,22 +63,6 @@ export async function forgotPasswordHandler(
       },
     })
   }
-
-  // Rate limiting
-  const identifier = getIdentifier(req)
-  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
-  setRateLimitHeaders(res, rateLimitResult)
-
-  if (!rateLimitResult.allowed) {
-    throw new RateLimitError(
-      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
-      rateLimitResult.retryAfter
-    )
-  }
-
-  // Validate CSRF token
-  const csrfService = getCSRFService()
-  await csrfService.validateToken(req)
 
   const { email } = req.body
 
@@ -139,8 +125,25 @@ export async function forgotPasswordHandler(
 
 /**
  * Main API handler with dependencies injected from real implementations
+ * This handler includes CSRF and rate limiting protection
  */
 async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
+  // Rate limiting check
+  const identifier = getIdentifier(req)
+  const rateLimitResult = await rateLimiter.checkLimit(identifier, 'auth:password-reset')
+  setRateLimitHeaders(res, rateLimitResult)
+
+  if (!rateLimitResult.allowed) {
+    throw new RateLimitError(
+      `Too many password reset attempts. Try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+      rateLimitResult.retryAfter
+    )
+  }
+
+  // CSRF token validation
+  const csrfService = getCSRFService()
+  await csrfService.validateToken(req)
+
   // Import dependencies
   // These will be provided by Agent 4 and Agent 5
   const { UserRepository } = await import("../../../repositories/UserRepository")

@@ -239,39 +239,52 @@ describe("EmailService", () => {
 
       // Need to re-import to get new instance without API key
       jest.resetModules()
+
+      // Re-mock the logger after resetModules
+      jest.mock("@/src/utils/logger", () => ({
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        default: {
+          info: jest.fn(),
+          error: jest.fn(),
+          warn: jest.fn(),
+          debug: jest.fn(),
+        },
+      }))
+
       const { EmailService: EmailServiceNoKey } = require("@/src/services/email")
       emailService = new EmailServiceNoKey()
     })
 
     it("should log warning instead of sending when API key is missing", async () => {
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation()
+      const logger = require("@/src/utils/logger")
 
       await emailService.sendPasswordReset("test@example.com", "token", "User")
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("RESEND_API_KEY not configured"),
-        expect.any(Object)
+      // Pino signature: logger.warn(object, message)
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: "test@example.com",
+          subject: "Password Reset Request - Petty Prophecies",
+        }),
+        "RESEND_API_KEY not configured. Would send email:"
       )
       expect(mockSend).not.toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
     })
 
     it("should not throw error when API key missing in development", async () => {
       process.env.NODE_ENV = "development"
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation()
 
       await expect(
         emailService.sendWelcome("test@example.com", "User")
       ).resolves.not.toThrow()
-
-      consoleSpy.mockRestore()
     })
 
     it("should log email details when in development mode", async () => {
       process.env.NODE_ENV = "development"
-      const consoleSpy = jest.spyOn(console, "log").mockImplementation()
-      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation()
+      const logger = require("@/src/utils/logger")
 
       await emailService.send({
         to: "test@example.com",
@@ -279,13 +292,13 @@ describe("EmailService", () => {
         html: "<p>Test</p>",
       })
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Full email HTML:"),
-        expect.any(String)
+      // Pino signature: logger.debug(object, message)
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: "<p>Test</p>",
+        }),
+        "Full email HTML"
       )
-
-      consoleSpy.mockRestore()
-      consoleWarnSpy.mockRestore()
     })
   })
 
