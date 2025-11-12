@@ -182,8 +182,8 @@ export default rateLimitMiddleware(errorHandler(handler))
 
 ### Current State
 - Jest configured with Next.js
-- Only 8 test files exist (see SHORTCUT-004)
-- **Need 80%+ coverage before production**
+- Test files exist in `__tests__/` directory
+- **Target: 80%+ coverage for production readiness**
 
 ### Test Pattern
 ```typescript
@@ -371,5 +371,6 @@ This app has a sarcastic, passive-aggressive personality. When adding new:
 
 ---
 
-**Last Updated:** 2025-11-05
+**Last Updated:** 2025-11-12
 **Maintained By:** Development Team + AI Agents
+**File:** .github/agents.md

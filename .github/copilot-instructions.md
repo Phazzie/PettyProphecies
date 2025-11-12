@@ -371,5 +371,6 @@ When suggesting completions:
 
 ---
 
-**Last Updated:** 2025-11-05
+**Last Updated:** 2025-11-12
 **For:** GitHub Copilot
+**File:** .github/copilot-instructions.md
