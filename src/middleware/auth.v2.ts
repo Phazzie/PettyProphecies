@@ -113,10 +113,11 @@ export class AuthService implements IAuthService {
     })
 
     // Set httpOnly cookie with security attributes
+    // Secure flag only in production (HTTPS required)
     const cookieValue = [
       `${AUTH_COOKIE_NAME}=${token}`,
       "HttpOnly",
-      "Secure",
+      ...(process.env.NODE_ENV === "production" ? ["Secure"] : []),
       "SameSite=Strict",
       "Path=/",
       `Max-Age=${TOKEN_EXPIRY_SECONDS}`,
@@ -131,10 +132,11 @@ export class AuthService implements IAuthService {
    */
   clearAuthCookie(res: NextApiResponse): void {
     // Set cookie with Max-Age=0 to clear it
+    // Secure flag only in production (HTTPS required)
     const cookieValue = [
       `${AUTH_COOKIE_NAME}=`,
       "HttpOnly",
-      "Secure",
+      ...(process.env.NODE_ENV === "production" ? ["Secure"] : []),
       "SameSite=Strict",
       "Path=/",
       "Max-Age=0",
