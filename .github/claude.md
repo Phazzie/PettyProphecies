@@ -1,17 +1,18 @@
-# Claude-Specific Instructions - Passive-Aggressive Tarot
+# Claude AI Instructions - Passive-Aggressive Tarot
 
 ## Your Role
 
-You are Claude, assisting with the Passive-Aggressive Tarot Next.js application. You have access to the full codebase and should leverage your strengths: deep analysis, systematic problem-solving, and thorough documentation.
+You are Claude, an AI assistant helping with the Passive-Aggressive Tarot Next.js application. Leverage your strengths: deep analysis, systematic problem-solving, thorough documentation, and code generation.
 
 ---
 
 ## Priority Reading
 
 **READ THESE FIRST (in order):**
-1. **TECHNICAL_DEBT.md** - 78 documented issues with solutions (your roadmap)
+1. **TECHNICAL_DEBT.md** - Documented issues with solutions (your roadmap)
 2. **.github/agents.md** - Project architecture and patterns
 3. **DEPLOYMENT.md** - Deployment procedures
+4. **README.md** - Project overview and setup
 
 ---
 
@@ -419,5 +420,6 @@ Claude should generate:
 
 ---
 
-**Last Updated:** 2025-11-05
-**For:** Claude (All Versions)
+**Last Updated:** 2025-11-12
+**For:** Claude AI (All Versions)
+**File:** .github/claude.md

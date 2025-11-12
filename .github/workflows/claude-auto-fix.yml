@@ -1,0 +1,92 @@
+name: Claude Auto-Fix PR Issues
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-fix:
+    # Trigger when someone comments "/auto-fix" on a PR
+    if: |
+      github.event.issue.pull_request && 
+      contains(github.event.comment.body, '/auto-fix')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    
+    steps:
+      - name: Get PR details
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.data;
+      
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJSON(steps.pr.outputs.result).head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Run Claude Auto-Fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are helping fix issues in PR #${{ github.event.issue.number }}.
+            
+            TASK: Review all comments on this PR and automatically fix simple, safe issues.
+            
+            PROCESS:
+            1. Use `gh pr view ${{ github.event.issue.number }} --comments` to see all comments
+            2. Identify fixable issues:
+               ✅ Typos and spelling errors
+               ✅ Import organization
+               ✅ Code formatting inconsistencies
+               ✅ Simple linting issues
+               ✅ Missing semicolons, trailing commas
+               ✅ Documentation improvements
+               ✅ Type annotation fixes
+               
+            3. Skip complex issues:
+               ❌ Architectural changes
+               ❌ Logic refactors
+               ❌ Breaking API changes
+               ❌ Performance optimizations requiring profiling
+            
+            4. For each fixable issue:
+               - Make the change
+               - Verify syntax with `npm run lint` or `npx tsc --noEmit`
+               - Commit with descriptive message: "fix: [description] (auto-fix)"
+            
+            5. Run tests: `npm run test:ci`
+            6. If tests fail, revert the commit that caused the failure
+            7. Push all commits to the PR branch
+            8. Comment on the PR with a summary:
+               ```
+               ## 🤖 Auto-Fix Summary
+               
+               Fixed X issues automatically:
+               - [x] Issue 1 description
+               - [x] Issue 2 description
+               
+               Skipped Y issues (require human review):
+               - [ ] Complex issue 1
+               - [ ] Complex issue 2
+               ```
+            
+            SAFETY RULES:
+            - Always run tests before pushing
+            - Revert any change that breaks tests
+            - Never modify core logic without explicit instruction
+            - Document what you fixed and why it's safe
+          
+          claude_args: '--allowed-tools "Bash(*)"'

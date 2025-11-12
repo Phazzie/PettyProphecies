@@ -198,6 +198,35 @@ npm run test:ci
 npm run lint
 ```
 
+## 🤖 AI-Powered CI Automation
+
+This project uses **Claude Code** for advanced CI automation:
+
+### Available Commands
+
+Comment on PRs or issues to trigger automated workflows:
+
+- **`/auto-fix`** - Automatically fix simple issues from code reviews (typos, formatting, linting)
+- **`/create-issues`** - Convert review comments into properly categorized GitHub issues
+- **`/generate-tests`** - Generate comprehensive tests for untested code
+- **`@claude`** - Get general AI assistance on issues and PRs
+
+### Automated Workflows
+
+The following run automatically:
+
+- **PR Code Review** - Reviews every PR for code quality, security, and best practices
+- **Technical Debt Tracking** - Auto-updates TECHNICAL_DEBT.md when PRs merge
+- **Weekly Debt Audit** - Scans codebase for new technical debt every Sunday
+
+### Learn More
+
+See [.github/CLAUDE_CODE_CI_AUTOMATION.md](.github/CLAUDE_CODE_CI_AUTOMATION.md) for:
+- Detailed automation strategy
+- 10 innovative Claude Code use cases
+- Implementation guides
+- ROI analysis and metrics
+
 ## 📊 API Endpoints
 
 **Authentication:**

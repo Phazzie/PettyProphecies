@@ -1,0 +1,113 @@
+name: Claude Smart Issue Creator
+
+on:
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+jobs:
+  create-issues:
+    # Trigger when someone comments "/create-issues" or a review contains it
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/create-issues')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '/create-issues'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Run Claude Issue Creator
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are creating GitHub issues from PR review feedback.
+            
+            CONTEXT:
+            - Repository: ${{ github.repository }}
+            - PR/Issue Number: ${{ github.event.pull_request.number || github.event.issue.number }}
+            
+            TASK: Extract actionable items from the review/comments and create well-structured issues.
+            
+            PROCESS:
+            1. Read the PR/issue and all comments:
+               ```bash
+               gh pr view ${{ github.event.pull_request.number || github.event.issue.number }} --comments
+               gh pr diff ${{ github.event.pull_request.number || github.event.issue.number }}
+               ```
+            
+            2. For each actionable item that should be tracked:
+               - Identify the category
+               - Determine priority
+               - Write clear description
+            
+            3. Issue Categories & Labels:
+               - **Security vulnerabilities** → labels: `security`, `high-priority`
+               - **Bugs** → labels: `bug`, priority based on severity
+               - **Technical debt** → labels: `tech-debt`, `refactor`
+               - **Testing gaps** → labels: `testing`, `good-first-issue`
+               - **Documentation** → labels: `documentation`
+               - **Enhancements** → labels: `enhancement`
+               - **Performance** → labels: `performance`
+            
+            4. Priority Assessment:
+               - **Critical:** Security vulnerabilities, data loss bugs
+               - **High:** Blocking features, major bugs
+               - **Medium:** Technical debt, non-blocking bugs
+               - **Low:** Nice-to-have improvements
+            
+            5. Link to TECHNICAL_DEBT.md:
+               - Check if related to existing debt item
+               - Reference the debt category (SEC-*, QUAL-*, PERF-*, etc.)
+            
+            6. Create each issue with gh CLI:
+               ```bash
+               gh issue create \
+                 --title "[TYPE] Clear, concise title" \
+                 --body "
+               ## Context
+               From PR #${{ github.event.pull_request.number || github.event.issue.number }}
+               
+               ## Problem
+               [Clear description of the issue]
+               
+               ## Code Location
+               \`file.ts:123-145\`
+               
+               ## Proposed Solution
+               [Specific, actionable solution]
+               
+               ## Related
+               - Technical Debt: [SEC-001 or similar]
+               - Estimated Effort: [X hours/days]
+               " \
+                 --label "appropriate,labels"
+               ```
+            
+            7. After creating issues:
+               - Get the issue numbers
+               - Comment on the original PR/issue with a summary:
+               ```
+               ## 📋 Issues Created from Review
+               
+               Created X issues to track feedback:
+               - #123: [Security] Fix JWT storage vulnerability
+               - #124: [Testing] Add tests for auth flow
+               - #125: [Tech Debt] Refactor validation to use Zod
+               
+               All issues have been categorized, prioritized, and linked to relevant technical debt items.
+               ```
+            
+            QUALITY CHECKS:
+            - Each issue must have: clear title, context, solution, labels
+            - No duplicate issues (check existing first with `gh issue list`)
+            - Link issues to PRs and related issues
+            - Use consistent formatting
+          
+          claude_args: '--allowed-tools "Bash(gh issue:*),Bash(gh pr:*)"'
