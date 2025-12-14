@@ -1,6 +1,6 @@
 import type React from "react"
 import { useState } from "react"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "@/lib/AuthContext"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
 import { validateEmail, validatePassword } from "../utils/validation"

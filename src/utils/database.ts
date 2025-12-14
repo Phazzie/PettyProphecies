@@ -8,17 +8,18 @@ const MONGODB_URI = process.env.MONGODB_URI || (() => {
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections growing exponentially
  * during API Route usage.
- *
- * NOTE: Using 'any' here is acceptable due to TypeScript limitations
- * with global caching patterns in Next.js. The actual type is:
- * { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
  */
-declare global {
-  // eslint-disable-next-line no-var
-  var mongoose: any
+interface MongooseCache {
+  conn: typeof mongoose | null
+  promise: Promise<typeof mongoose> | null
 }
 
-let cached = global.mongoose
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined
+}
+
+let cached = global.mongoose as MongooseCache
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null }

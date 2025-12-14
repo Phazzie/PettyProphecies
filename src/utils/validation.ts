@@ -1,11 +1,27 @@
+import { z } from "zod"
+
+// Zod schemas for validation
+const emailSchema = z.string().email()
+
+const passwordSchema = z
+  .string()
+  .min(12)
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[a-zA-Z\d@$!%*?&]{12,}$/)
+
+const usernameSchema = z.string().regex(/^[a-zA-Z0-9_]{3,20}$/)
+
 /**
- * Validates an email address
+ * Validates an email address using Zod
  * @param {string} email - The email address to validate
  * @returns {boolean} True if the email is valid, false otherwise
  */
 export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
+  try {
+    emailSchema.parse(email)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -14,20 +30,28 @@ export const validateEmail = (email: string): boolean => {
  * @returns {boolean} True if the password is valid, false otherwise
  */
 export const validatePassword = (password: string): boolean => {
-  // Require at least 8 characters, one uppercase letter, one lowercase letter, and one number
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/
-  return passwordRegex.test(password)
+  // Require at least 12 characters, one uppercase, one lowercase, one digit, and one special character (@$!%*?&)
+  try {
+    passwordSchema.parse(password)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
- * Validates a username
+ * Validates a username using Zod
  * @param {string} username - The username to validate
  * @returns {boolean} True if the username is valid, false otherwise
  */
 export const validateUsername = (username: string): boolean => {
   // Require 3-20 characters, only alphanumeric characters and underscores
-  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-  return usernameRegex.test(username)
+  try {
+    usernameSchema.parse(username)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -52,7 +76,7 @@ export const getPassiveAggressiveMessage = (field: string, isValid: boolean): st
     case "email":
       return "Wow, an invalid email. You must be new to the internet."
     case "password":
-      return "That password is about as strong as a wet paper bag. Try harder."
+      return "That password is pathetic. Need 12+ characters with uppercase, lowercase, numbers, AND special characters (@$!%*?&). Try harder."
     case "username":
       return "Really? That's the username you're going with? How... creative."
     case "confirmPassword":
