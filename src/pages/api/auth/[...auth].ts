@@ -73,5 +73,5 @@ function handleLogout(req: NextApiRequest, res: NextApiResponse) {
   res.status(200).json({ message: "Logged out successfully" })
 }
 
-export default rateLimitMiddleware(errorHandler(handler))
+export default rateLimitMiddleware(errorHandler(handler), 'auth')
 

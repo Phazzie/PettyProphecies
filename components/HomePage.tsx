@@ -16,7 +16,7 @@ const UserDashboard = dynamic(() => import("@/src/components/UserDashboard").the
   loading: () => <LoadingSpinner />,
 })
 
-import { ProtectedRoute } from "@/src/components/ProtectedRoute"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
 import ErrorBoundary from "@/src/components/ErrorBoundary"
 
 export function HomePage() {
