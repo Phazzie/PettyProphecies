@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
-import { useFocusError } from "../hooks/useFocusError"
 import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
 
 /**
@@ -35,7 +34,7 @@ export const Login: React.FC = () => {
     if (validateForm()) {
       setSuccess(false)
       try {
-        const data = await request({
+        await request({
           url: "/api/auth/login",
           method: "POST",
           body: values,

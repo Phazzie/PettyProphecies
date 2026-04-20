@@ -6,7 +6,7 @@ const emailSchema = z.string().email()
 const passwordSchema = z
   .string()
   .min(12)
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[a-zA-Z\d@$!%*?&]{12,}$/)
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{12,}$/)
 
 const usernameSchema = z.string().regex(/^[a-zA-Z0-9_]{3,20}$/)
 
@@ -15,14 +15,7 @@ const usernameSchema = z.string().regex(/^[a-zA-Z0-9_]{3,20}$/)
  * @param {string} email - The email address to validate
  * @returns {boolean} True if the email is valid, false otherwise
  */
-export const validateEmail = (email: string): boolean => {
-  try {
-    emailSchema.parse(email)
-    return true
-  } catch {
-    return false
-  }
-}
+export const validateEmail = (email: string): boolean => emailSchema.safeParse(email).success
 
 /**
  * Validates a password
@@ -31,12 +24,7 @@ export const validateEmail = (email: string): boolean => {
  */
 export const validatePassword = (password: string): boolean => {
   // Require at least 12 characters, one uppercase, one lowercase, one digit, and one special character (@$!%*?&)
-  try {
-    passwordSchema.parse(password)
-    return true
-  } catch {
-    return false
-  }
+  return passwordSchema.safeParse(password).success
 }
 
 /**
@@ -46,12 +34,7 @@ export const validatePassword = (password: string): boolean => {
  */
 export const validateUsername = (username: string): boolean => {
   // Require 3-20 characters, only alphanumeric characters and underscores
-  try {
-    usernameSchema.parse(username)
-    return true
-  } catch {
-    return false
-  }
+  return usernameSchema.safeParse(username).success
 }
 
 /**

@@ -19,11 +19,7 @@ declare global {
   var mongoose: MongooseCache | undefined
 }
 
-let cached = global.mongoose as MongooseCache
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
-}
+const cached: MongooseCache = global.mongoose ?? (global.mongoose = { conn: null, promise: null })
 
 /**
  * Connects to the MongoDB database

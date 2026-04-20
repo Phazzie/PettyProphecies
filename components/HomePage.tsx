@@ -86,7 +86,7 @@ export function HomePage() {
               <div className="space-y-6">
                 <Login />
                 <div className="text-center">
-                  <span className="text-gray-600">Don't have an account?</span>
+                  <span className="text-gray-600">Don&apos;t have an account?</span>
                 </div>
                 <Register />
               </div>
