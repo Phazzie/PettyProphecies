@@ -11,14 +11,14 @@ const ErrorPage: React.FC<ErrorPageProps> = ({ error }) => {
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Oops! Something went wrong.</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Don't worry, it's probably just the universe conspiring against you. Again.
+            Don&apos;t worry, it&apos;s probably just the universe conspiring against you. Again.
           </p>
         </div>
         <div className="mt-8 space-y-6">
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error details (as if you'd understand):</h3>
+                <h3 className="text-sm font-medium text-red-800">Error details (as if you&apos;d understand):</h3>
                 <div className="mt-2 text-sm text-red-700">
                   {error ? error.message : "Unknown error. How mysterious."}
                 </div>

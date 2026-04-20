@@ -28,3 +28,9 @@ export class DatabaseError extends ApiError {
   }
 }
 
+export interface MongoError extends Error {
+  code?: number
+  keyPattern?: Record<string, unknown>
+  keyValue?: Record<string, unknown>
+}
+
