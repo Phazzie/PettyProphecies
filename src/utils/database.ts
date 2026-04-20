@@ -19,10 +19,9 @@ declare global {
   var mongoose: MongooseCache | undefined
 }
 
-let cached = global.mongoose as MongooseCache
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
+let cached: MongooseCache = global.mongoose ?? { conn: null, promise: null }
+if (!global.mongoose) {
+  global.mongoose = cached
 }
 
 /**

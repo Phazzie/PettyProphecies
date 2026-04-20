@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
 export function authMiddleware(handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
-      const token = req.headers.authorization?.split(" ")[1]
+      const token = req.cookies?.token
       if (!token) {
         return res.status(401).json({ message: "Authentication required" })
       }

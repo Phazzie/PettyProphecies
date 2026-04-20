@@ -2,6 +2,7 @@ import type React from "react"
 import { useState } from "react"
 import { useFormValidation } from "../hooks/useFormValidation"
 import { useApiRequest } from "../hooks/useApiRequest"
+import { useCsrf } from "../hooks/useCsrf"
 import { validateSpreadSelection } from "../utils/validation"
 import { spreads } from "../data/tarotSpreads"
 import { toast } from "sonner"
@@ -31,6 +32,7 @@ export const TarotReading: React.FC = () => {
 
   // API request hook
   const { request, loading } = useApiRequest<ReadingResponse>()
+  const csrfToken = useCsrf()
 
   // State for storing the current reading and its rating
   const [reading, setReading] = useState<ReadingResponse | null>(null)
@@ -48,9 +50,7 @@ export const TarotReading: React.FC = () => {
           url: "/api/tarot-reading",
           method: "POST",
           body: { spreadName: values.spread },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
         })
         setReading(data)
         toast.info(getPassiveAggressiveMessage("reading"))
@@ -71,10 +71,8 @@ export const TarotReading: React.FC = () => {
       await request({
         url: "/api/tarot-reading",
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: { readingId: reading.readingId, rating: value },
+        headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
       })
       setRating(value)
       toast.success("Rating submitted. Your opinion has been duly noted and promptly ignored.")

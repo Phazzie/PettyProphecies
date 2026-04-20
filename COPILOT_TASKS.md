@@ -569,13 +569,13 @@ NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
 
 | Section | Tasks | Status |
 |---------|-------|--------|
-| Critical Security | TASK-001 to TASK-010 | 0/10 complete |
-| High Priority | TASK-011 to TASK-021 | 3/11 complete* |
+| Critical Security | TASK-001 to TASK-010 | 10/10 complete ✅ |
+| High Priority | TASK-011 to TASK-021 | 5/11 complete* |
 | Medium Priority | TASK-022 to TASK-030 | 0/9 complete |
 | Low Priority | TASK-031 to TASK-035 | 0/5 complete |
 
-*TASK-011 (DB indexes), TASK-014 (any types), TASK-021 (auth rate limiting) are partially done from previous session.
+*TASK-011 (DB indexes), TASK-012 (logout POST), TASK-014 (any types), TASK-021 (auth rate limiting) complete from current/previous session.
 
-**Minimum viable for production:** Complete TASK-001 through TASK-012.
+**Minimum viable for production:** TASK-001 through TASK-012 are complete.
 
-**Fully production-ready:** Complete TASK-001 through TASK-021.
+**Fully production-ready:** Complete TASK-013 through TASK-021.

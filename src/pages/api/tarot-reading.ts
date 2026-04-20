@@ -3,6 +3,7 @@ import { authMiddleware } from "../../middleware/auth"
 import { errorHandler } from "../../middleware/errorHandler"
 import { requestLogger } from "../../middleware/requestLogger"
 import { rateLimitMiddleware } from "../../middleware/rateLimit"
+import { withCsrf } from "../../middleware/csrf"
 import { getSpreadByName } from "../../data/tarotSpreads"
 import { connectToDatabase } from "../../utils/database"
 import { Reading } from "../../models/Reading"
@@ -70,5 +71,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default rateLimitMiddleware(authMiddleware(requestLogger(errorHandler(handler))))
+export default rateLimitMiddleware(authMiddleware(withCsrf(requestLogger(errorHandler(handler)))))
 

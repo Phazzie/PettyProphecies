@@ -18,5 +18,7 @@ const readingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 })
 
+readingSchema.index({ userId: 1, createdAt: -1 })
+
 export const Reading = mongoose.model<IReading>("Reading", readingSchema)
 
