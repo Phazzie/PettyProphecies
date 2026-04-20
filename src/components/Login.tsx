@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { ErrorAnnouncer } from "./ErrorAnnouncer"
 import { ErrorMessage } from "./ErrorMessage"
 import { LoadingSpinner } from "./LoadingSpinner"
-import { useFocusError } from "../hooks/useFocusError"
 import { getPassiveAggressiveMessage } from "../utils/passiveAggressiveMessages"
 import { ForgotPassword } from "./ForgotPassword"
 

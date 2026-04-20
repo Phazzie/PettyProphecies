@@ -52,7 +52,7 @@ export const UserDashboard: React.FC = () => {
         </div>
       ) : readings.length === 0 ? (
         <p className="text-center text-gray-600 dark:text-gray-400">
-          You haven't had any readings yet. Maybe you're avoiding the truth?
+          You haven&apos;t had any readings yet. Maybe you&apos;re avoiding the truth?
         </p>
       ) : (
         <>

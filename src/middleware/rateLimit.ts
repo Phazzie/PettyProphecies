@@ -28,7 +28,8 @@ let cleanupStarted = false
 function startCleanup() {
   if (!cleanupStarted) {
     cleanupStarted = true
-    setInterval(cleanupExpiredEntries, CLEANUP_INTERVAL)
+    const timer = setInterval(cleanupExpiredEntries, CLEANUP_INTERVAL)
+    timer.unref?.()
   }
 }
 

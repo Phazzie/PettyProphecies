@@ -16,7 +16,7 @@ const UserDashboard = dynamic(() => import("@/src/components/UserDashboard").the
   loading: () => <LoadingSpinner />,
 })
 
-import { ProtectedRoute } from "@/src/components/ProtectedRoute"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
 import ErrorBoundary from "@/src/components/ErrorBoundary"
 
 export function HomePage() {
@@ -86,7 +86,7 @@ export function HomePage() {
               <div className="space-y-6">
                 <Login />
                 <div className="text-center">
-                  <span className="text-gray-600">Don't have an account?</span>
+                  <span className="text-gray-600">Don&apos;t have an account?</span>
                 </div>
                 <Register />
               </div>
